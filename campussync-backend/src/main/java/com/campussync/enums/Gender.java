@@ -1,0 +1,7 @@
+package com.campussync.enums;
+
+public enum Gender {
+    MALE,
+    FEMALE,
+    OTHER
+}
