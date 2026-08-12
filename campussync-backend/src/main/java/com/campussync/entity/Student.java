@@ -49,4 +49,8 @@ public class Student {
     @Column(name = "address", length = 500)
     private String address;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Parent parent;
+
 }
