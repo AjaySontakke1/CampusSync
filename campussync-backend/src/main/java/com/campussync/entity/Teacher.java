@@ -42,4 +42,12 @@ public class Teacher {
     @Column(name = "qualification")
     private String qualification;
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "teacher_subject",
+        joinColumns = @JoinColumn(name = "teacher_id"),
+        inverseJoinColumns = @JoinColumn(name = "subject_id")
+    )
+    private java.util.Set<Subject> subjects;
+
 }
