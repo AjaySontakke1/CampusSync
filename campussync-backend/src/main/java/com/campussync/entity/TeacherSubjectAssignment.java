@@ -36,4 +36,7 @@ public class TeacherSubjectAssignment {
     @Column(name = "academic_year", nullable = false)
     private String academicYear;
 
+    @Column(name = "division")
+    private String division;
+
 }
