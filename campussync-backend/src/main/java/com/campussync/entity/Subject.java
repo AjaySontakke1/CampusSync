@@ -33,7 +33,4 @@ public class Subject {
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
 
-    @ManyToMany(mappedBy = "subjects", fetch = FetchType.LAZY)
-    private java.util.Set<Teacher> teachers;
-
 }
