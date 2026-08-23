@@ -33,11 +33,17 @@ public class LectureNote {
     @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;
 
-    @Column(name = "file_url", nullable = false, length = 500)
-    private String fileUrl;
+    @Column(name = "file_name", nullable = false)
+    private String fileName;
 
     @Column(name = "file_type", nullable = false, length = 50)
     private String fileType;
+
+    @Column(name = "file_size", nullable = false)
+    private Long fileSize;
+
+    @Column(name = "file_url", nullable = false, length = 500)
+    private String fileUrl;
 
     @Column(name = "uploaded_at", nullable = false)
     private LocalDateTime uploadedAt;
