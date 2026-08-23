@@ -33,8 +33,9 @@ public class TeacherSubjectAssignment {
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
 
-    @Column(name = "academic_year", nullable = false)
-    private String academicYear;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_year_id", nullable = false)
+    private AcademicYear academicYear;
 
     @Column(name = "division")
     private String division;
