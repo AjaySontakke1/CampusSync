@@ -33,8 +33,9 @@ public class Fee {
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
 
-    @Column(name = "academic_year", nullable = false, length = 20)
-    private String academicYear;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_year_id", nullable = false)
+    private AcademicYear academicYear;
 
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
