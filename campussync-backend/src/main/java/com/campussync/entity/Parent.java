@@ -38,6 +38,10 @@ public class Parent {
     @Column(name = "occupation")
     private String occupation;
 
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
     @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
     private List<Student> students;
 
