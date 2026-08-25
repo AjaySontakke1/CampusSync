@@ -33,6 +33,10 @@ public class LectureNote {
     @JoinColumn(name = "teacher_id", nullable = false)
     private Teacher teacher;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_year_id", nullable = false)
+    private AcademicYear academicYear;
+
     @Column(name = "file_name", nullable = false)
     private String fileName;
 
