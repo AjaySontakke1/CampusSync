@@ -41,6 +41,10 @@ public class Assignment {
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "academic_year_id", nullable = false)
+    private AcademicYear academicYear;
+
     @Column(name = "assigned_date", nullable = false)
     private LocalDate assignedDate;
 
