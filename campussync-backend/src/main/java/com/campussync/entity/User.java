@@ -43,6 +43,10 @@ public class User {
     @Builder.Default
     private Boolean active = true;
 
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
