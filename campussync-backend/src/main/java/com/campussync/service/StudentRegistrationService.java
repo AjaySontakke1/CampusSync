@@ -1,11 +1,14 @@
 package com.campussync.service;
 
+import com.campussync.dto.ParentRegistrationRequest;
 import com.campussync.dto.StudentRegistrationRequest;
 import com.campussync.entity.*;
 import com.campussync.enums.Role;
 import com.campussync.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 public class StudentRegistrationService {
@@ -31,30 +34,16 @@ public class StudentRegistrationService {
 
     @Transactional
     public void registerStudent(StudentRegistrationRequest request) {
-        // 1. Create and save Parent User and Parent Profile (if parent details are provided)
+        // 1. Create or Find Parent (if parent details are provided)
         Parent parent = null;
         if (request.getParentEmail() != null && !request.getParentEmail().isBlank()) {
-            User parentUser = userRepository.findByEmail(request.getParentEmail()).orElse(null);
-            if (parentUser == null) {
-                parentUser = new User();
-                parentUser.setUsername(request.getParentEmail());
-                parentUser.setEmail(request.getParentEmail());
-                parentUser.setFirstName(request.getParentFirstName());
-                parentUser.setLastName(request.getParentLastName());
-                parentUser.setRole(Role.PARENT);
-                parentUser.setEmailVerified(false);
-                parentUser = userRepository.save(parentUser);
-            }
-
-            parent = parentRepository.findByUser(parentUser).orElse(null);
-            if (parent == null) {
-                parent = new Parent();
-                parent.setFirstName(request.getParentFirstName());
-                parent.setLastName(request.getParentLastName());
-                parent.setPhone(request.getParentPhone());
-                parent.setUser(parentUser);
-                parent = parentRepository.save(parent);
-            }
+            ParentRegistrationRequest parentRequest = ParentRegistrationRequest.builder()
+                    .firstName(request.getParentFirstName())
+                    .lastName(request.getParentLastName())
+                    .email(request.getParentEmail())
+                    .phone(request.getParentPhone())
+                    .build();
+            parent = createOrFindParent(parentRequest);
         }
 
         // 2. Create and save Student User
@@ -91,5 +80,34 @@ public class StudentRegistrationService {
         }
 
         studentRepository.save(student);
+    }
+
+    private Parent createOrFindParent(ParentRegistrationRequest request) {
+        Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
+
+        if (existingUser.isPresent()) {
+            return parentRepository.findByUser(existingUser.get())
+                    .orElseThrow(() -> new RuntimeException("Parent profile not found"));
+        }
+
+        return createNewParent(request);
+    }
+
+    private Parent createNewParent(ParentRegistrationRequest request) {
+        User user = new User();
+        user.setUsername(request.getEmail());
+        user.setEmail(request.getEmail());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setRole(Role.PARENT);
+        user.setEmailVerified(false);
+        User savedUser = userRepository.save(user);
+
+        Parent parent = new Parent();
+        parent.setFirstName(request.getFirstName());
+        parent.setLastName(request.getLastName());
+        parent.setPhone(request.getPhone());
+        parent.setUser(savedUser);
+        return parentRepository.save(parent);
     }
 }
