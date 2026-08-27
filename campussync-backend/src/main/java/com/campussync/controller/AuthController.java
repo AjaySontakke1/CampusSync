@@ -2,6 +2,7 @@ package com.campussync.controller;
 
 import com.campussync.dto.ParentRegistrationRequest;
 import com.campussync.dto.StudentRegistrationRequest;
+import com.campussync.service.EmailVerificationService;
 import com.campussync.service.ParentRegistrationService;
 import com.campussync.service.StudentRegistrationService;
 import jakarta.validation.Valid;
@@ -14,12 +15,15 @@ public class AuthController {
 
     private final ParentRegistrationService parentRegistrationService;
     private final StudentRegistrationService studentRegistrationService;
+    private final EmailVerificationService emailVerificationService;
 
     public AuthController(
             ParentRegistrationService parentRegistrationService,
-            StudentRegistrationService studentRegistrationService) {
+            StudentRegistrationService studentRegistrationService,
+            EmailVerificationService emailVerificationService) {
         this.parentRegistrationService = parentRegistrationService;
         this.studentRegistrationService = studentRegistrationService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register-parent")
@@ -34,5 +38,11 @@ public class AuthController {
             @Valid @RequestBody StudentRegistrationRequest request) {
         studentRegistrationService.registerStudent(request);
         return ResponseEntity.ok("Student registered successfully");
+    }
+
+    @GetMapping("/verify-email")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        emailVerificationService.verifyEmail(token);
+        return ResponseEntity.ok("Email verified successfully");
     }
 }
