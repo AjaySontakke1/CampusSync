@@ -10,10 +10,15 @@ public class EmailVerificationService {
 
     private final UserRepository userRepository;
     private final VerificationTokenService tokenService;
+    private final EmailService emailService;
 
-    public EmailVerificationService(UserRepository userRepository, VerificationTokenService tokenService) {
+    public EmailVerificationService(
+            UserRepository userRepository,
+            VerificationTokenService tokenService,
+            EmailService emailService) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -28,7 +33,6 @@ public class EmailVerificationService {
         String token = tokenService.generateToken();
         tokenService.createToken(user, token);
 
-        // Email sending will be added in the next task
-        System.out.println("Generated token: " + token + " for email: " + email);
+        emailService.sendVerificationEmail(user.getEmail(), token);
     }
 }
