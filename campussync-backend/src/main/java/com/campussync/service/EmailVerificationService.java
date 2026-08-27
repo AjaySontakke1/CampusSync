@@ -9,12 +9,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class EmailVerificationService {
 
     private final UserRepository userRepository;
+    private final VerificationTokenService tokenService;
 
-    public EmailVerificationService(UserRepository userRepository) {
+    public EmailVerificationService(UserRepository userRepository, VerificationTokenService tokenService) {
         this.userRepository = userRepository;
+        this.tokenService = tokenService;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public void resendVerification(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -23,7 +25,10 @@ public class EmailVerificationService {
             throw new RuntimeException("Email already verified");
         }
 
+        String token = tokenService.generateToken();
+        tokenService.createToken(user, token);
+
         // Email sending will be added in the next task
-        System.out.println("Resending verification email to: " + email);
+        System.out.println("Generated token: " + token + " for email: " + email);
     }
 }

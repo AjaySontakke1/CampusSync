@@ -24,10 +24,11 @@ public class VerificationTokenService {
 
     @Transactional
     public void createToken(User user, String token) {
+        tokenRepository.deleteByUser(user);
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(token)
                 .user(user)
-                .expiryDate(LocalDateTime.now().plusHours(24))
+                .expiryDate(LocalDateTime.now().plusMinutes(15))
                 .build();
         tokenRepository.save(verificationToken);
     }
