@@ -3,6 +3,9 @@ package com.campussync.controller;
 import com.campussync.dto.ParentRegistrationRequest;
 import com.campussync.dto.StudentRegistrationRequest;
 import com.campussync.dto.SetPasswordRequest;
+import com.campussync.dto.LoginRequest;
+import com.campussync.dto.LoginResponse;
+import com.campussync.service.AuthService;
 import com.campussync.service.EmailVerificationService;
 import com.campussync.service.ParentRegistrationService;
 import com.campussync.service.StudentRegistrationService;
@@ -17,14 +20,17 @@ public class AuthController {
     private final ParentRegistrationService parentRegistrationService;
     private final StudentRegistrationService studentRegistrationService;
     private final EmailVerificationService emailVerificationService;
+    private final AuthService authService;
 
     public AuthController(
             ParentRegistrationService parentRegistrationService,
             StudentRegistrationService studentRegistrationService,
-            EmailVerificationService emailVerificationService) {
+            EmailVerificationService emailVerificationService,
+            AuthService authService) {
         this.parentRegistrationService = parentRegistrationService;
         this.studentRegistrationService = studentRegistrationService;
         this.emailVerificationService = emailVerificationService;
+        this.authService = authService;
     }
 
     @PostMapping("/register-parent")
@@ -52,5 +58,12 @@ public class AuthController {
             @Valid @RequestBody SetPasswordRequest request) {
         emailVerificationService.setPassword(request);
         return ResponseEntity.ok("Password set successfully");
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request) {
+        LoginResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 }
