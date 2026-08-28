@@ -1,9 +1,11 @@
 package com.campussync.service;
 
+import com.campussync.dto.SetPasswordRequest;
 import com.campussync.entity.User;
 import com.campussync.entity.VerificationToken;
 import com.campussync.repository.UserRepository;
 import com.campussync.repository.VerificationTokenRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,16 +18,19 @@ public class EmailVerificationService {
     private final VerificationTokenService tokenService;
     private final EmailService emailService;
     private final VerificationTokenRepository tokenRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public EmailVerificationService(
             UserRepository userRepository,
             VerificationTokenService tokenService,
             EmailService emailService,
-            VerificationTokenRepository tokenRepository) {
+            VerificationTokenRepository tokenRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.tokenRepository = tokenRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
@@ -55,8 +60,31 @@ public class EmailVerificationService {
         User user = verificationToken.getUser();
         user.setEmailVerified(true);
         userRepository.save(user);
+    }
 
-        // Delete token after successful verification so it cannot be used again
+    @Transactional
+    public void setPassword(SetPasswordRequest request) {
+        VerificationToken verificationToken = tokenRepository.findByToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expired");
+        }
+
+        User user = verificationToken.getUser();
+
+        if (!user.isEmailVerified()) {
+            throw new RuntimeException("Email is not verified");
+        }
+
+        if (user.getPassword() != null) {
+            throw new RuntimeException("Password already set");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        userRepository.save(user);
+
+        // Delete token after successful password setup so it cannot be reused
         tokenRepository.delete(verificationToken);
     }
 }

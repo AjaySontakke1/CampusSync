@@ -2,6 +2,7 @@ package com.campussync.controller;
 
 import com.campussync.dto.ParentRegistrationRequest;
 import com.campussync.dto.StudentRegistrationRequest;
+import com.campussync.dto.SetPasswordRequest;
 import com.campussync.service.EmailVerificationService;
 import com.campussync.service.ParentRegistrationService;
 import com.campussync.service.StudentRegistrationService;
@@ -44,5 +45,12 @@ public class AuthController {
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         emailVerificationService.verifyEmail(token);
         return ResponseEntity.ok("Email verified successfully");
+    }
+
+    @PostMapping("/set-password")
+    public ResponseEntity<String> setPassword(
+            @Valid @RequestBody SetPasswordRequest request) {
+        emailVerificationService.setPassword(request);
+        return ResponseEntity.ok("Password set successfully");
     }
 }
