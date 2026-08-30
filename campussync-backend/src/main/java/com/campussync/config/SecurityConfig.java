@@ -22,7 +22,9 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .anyRequest().permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/parent/**").hasRole("PARENT")
+                .anyRequest().authenticated()
             );
         return http.build();
     }
