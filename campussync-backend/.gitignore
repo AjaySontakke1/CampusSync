@@ -33,5 +33,6 @@ build/
 !**/src/test/**/build/
 
 ### Sensitive Config ###
+src/main/resources/application.properties
 application-local.properties
 application-prod.properties

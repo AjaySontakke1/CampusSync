@@ -1,6 +1,6 @@
 package com.campussync.controller;
 
-import com.campussync.entity.Student;
+import com.campussync.dto.StudentResponseDTO;
 import com.campussync.service.ParentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -21,9 +21,9 @@ public class ParentController {
     }
 
     @GetMapping("/students")
-    public ResponseEntity<List<Student>> getMyStudents(Authentication authentication) {
+    public ResponseEntity<List<StudentResponseDTO>> getMyStudents(Authentication authentication) {
         String email = authentication.getName();
-        List<Student> students = parentService.getMyStudents(email);
+        List<StudentResponseDTO> students = parentService.getMyStudents(email);
         return ResponseEntity.ok(students);
     }
 }

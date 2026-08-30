@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.StudentResponseDTO;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
@@ -28,13 +29,22 @@ public class ParentService {
     }
 
     @Transactional(readOnly = true)
-    public List<Student> getMyStudents(String email) {
+    public List<StudentResponseDTO> getMyStudents(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Parent parent = parentRepository.findByUser(user)
                 .orElseThrow(() -> new RuntimeException("Parent not found"));
 
-        return studentRepository.findByParent(parent);
+        List<Student> students = studentRepository.findByParent(parent);
+
+        return students.stream()
+                .map(student -> StudentResponseDTO.builder()
+                        .id(student.getStudentId())
+                        .firstName(student.getUser().getFirstName())
+                        .lastName(student.getUser().getLastName())
+                        .email(student.getUser().getEmail())
+                        .build())
+                .toList();
     }
 }
