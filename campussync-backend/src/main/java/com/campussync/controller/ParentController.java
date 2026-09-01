@@ -5,6 +5,7 @@ import com.campussync.service.ParentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,5 +26,14 @@ public class ParentController {
         String email = authentication.getName();
         List<StudentResponseDTO> students = parentService.getMyStudents(email);
         return ResponseEntity.ok(students);
+    }
+
+    @GetMapping("/students/{studentId}")
+    public ResponseEntity<StudentResponseDTO> getMyStudent(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        StudentResponseDTO student = parentService.getMyStudent(email, studentId);
+        return ResponseEntity.ok(student);
     }
 }

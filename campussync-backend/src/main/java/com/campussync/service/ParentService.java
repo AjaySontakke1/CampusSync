@@ -47,4 +47,24 @@ public class ParentService {
                         .build())
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public StudentResponseDTO getMyStudent(String email, Long studentId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        return StudentResponseDTO.builder()
+                .id(student.getStudentId())
+                .firstName(student.getUser().getFirstName())
+                .lastName(student.getUser().getLastName())
+                .email(student.getUser().getEmail())
+                .build();
+    }
 }
