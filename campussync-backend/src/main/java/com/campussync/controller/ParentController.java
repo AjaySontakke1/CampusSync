@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.service.ParentService;
 import org.springframework.http.ResponseEntity;
@@ -35,5 +36,14 @@ public class ParentController {
         String email = authentication.getName();
         StudentResponseDTO student = parentService.getMyStudent(email, studentId);
         return ResponseEntity.ok(student);
+    }
+
+    @GetMapping("/students/{studentId}/attendance")
+    public ResponseEntity<AttendanceResponseDTO> getChildAttendance(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        AttendanceResponseDTO attendance = parentService.getChildAttendance(email, studentId);
+        return ResponseEntity.ok(attendance);
     }
 }
