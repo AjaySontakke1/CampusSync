@@ -2,13 +2,16 @@ package com.campussync.service;
 
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
+import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.entity.Attendance;
+import com.campussync.entity.ExamResult;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.repository.AttendanceRepository;
+import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.UserRepository;
@@ -24,16 +27,19 @@ public class ParentService {
     private final ParentRepository parentRepository;
     private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
+    private final ExamResultRepository examResultRepository;
 
     public ParentService(
             UserRepository userRepository,
             ParentRepository parentRepository,
             StudentRepository studentRepository,
-            AttendanceRepository attendanceRepository) {
+            AttendanceRepository attendanceRepository,
+            ExamResultRepository examResultRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
+        this.examResultRepository = examResultRepository;
     }
 
     @Transactional(readOnly = true)
@@ -114,5 +120,44 @@ public class ParentService {
                 .attendancePercentage(Math.round(percentage * 100.0) / 100.0)
                 .records(records)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExamResultResponseDTO> getChildExamResults(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        List<ExamResult> results =
+                examResultRepository.findByStudent(student);
+
+        return results.stream()
+                .map(result -> ExamResultResponseDTO.builder()
+                        .resultId(result.getResultId())
+                        .examTitle(result.getExam() != null ? result.getExam().getTitle() : null)
+                        .examType(result.getExam() != null && result.getExam().getExamType() != null ? result.getExam().getExamType().name() : null)
+                        .subjectName(
+                                result.getExam() != null && result.getExam().getSubject() != null
+                                        ? result.getExam().getSubject().getSubjectName()
+                                        : null
+                        )
+                        .examDate(result.getExam() != null ? result.getExam().getExamDate() : null)
+                        .marksObtained(result.getMarksObtained())
+                        .maxMarks(result.getMaxMarks())
+                        .grade(result.getGrade())
+                        .status(result.getStatus() != null ? result.getStatus().name() : null)
+                        .remarks(result.getRemarks())
+                        .publishedAt(result.getPublishedAt())
+                        .build())
+                .toList();
     }
 }
