@@ -2,6 +2,7 @@ package com.campussync.controller;
 
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
+import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.service.ParentService;
 import org.springframework.http.ResponseEntity;
@@ -55,5 +56,14 @@ public class ParentController {
         String email = authentication.getName();
         List<ExamResultResponseDTO> results = parentService.getChildExamResults(email, studentId);
         return ResponseEntity.ok(results);
+    }
+
+    @GetMapping("/students/{studentId}/fees")
+    public ResponseEntity<List<FeeResponseDTO>> getChildFees(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<FeeResponseDTO> fees = parentService.getChildFees(email, studentId);
+        return ResponseEntity.ok(fees);
     }
 }

@@ -3,15 +3,18 @@ package com.campussync.service;
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
+import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.ExamResult;
+import com.campussync.entity.Fee;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.ExamResultRepository;
+import com.campussync.repository.FeeRepository;
 import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.UserRepository;
@@ -28,18 +31,21 @@ public class ParentService {
     private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
     private final ExamResultRepository examResultRepository;
+    private final FeeRepository feeRepository;
 
     public ParentService(
             UserRepository userRepository,
             ParentRepository parentRepository,
             StudentRepository studentRepository,
             AttendanceRepository attendanceRepository,
-            ExamResultRepository examResultRepository) {
+            ExamResultRepository examResultRepository,
+            FeeRepository feeRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
         this.examResultRepository = examResultRepository;
+        this.feeRepository = feeRepository;
     }
 
     @Transactional(readOnly = true)
@@ -157,6 +163,50 @@ public class ParentService {
                         .status(result.getStatus() != null ? result.getStatus().name() : null)
                         .remarks(result.getRemarks())
                         .publishedAt(result.getPublishedAt())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeeResponseDTO> getChildFees(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        List<Fee> fees = feeRepository.findByStudent(student);
+
+        return fees.stream()
+                .map(fee -> FeeResponseDTO.builder()
+                        .feeId(fee.getFeeId())
+                        .courseName(
+                                fee.getCourse() != null
+                                        ? fee.getCourse().getCourseName()
+                                        : null
+                        )
+                        .semesterName(
+                                fee.getSemester() != null
+                                        ? fee.getSemester().getSemesterName()
+                                        : null
+                        )
+                        .academicYear(
+                                fee.getAcademicYear() != null
+                                        ? fee.getAcademicYear().getName()
+                                        : null
+                        )
+                        .totalAmount(fee.getTotalAmount())
+                        .paidAmount(fee.getPaidAmount())
+                        .remainingAmount(fee.getRemainingAmount())
+                        .dueDate(fee.getDueDate())
+                        .status(fee.getStatus().name())
                         .build())
                 .toList();
     }
