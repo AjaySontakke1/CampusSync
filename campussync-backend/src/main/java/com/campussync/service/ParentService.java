@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AssignmentResponseDTO;
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
@@ -7,6 +8,7 @@ import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.entity.Assignment;
+import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.ExamResult;
@@ -16,6 +18,7 @@ import com.campussync.entity.Student;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.repository.AssignmentRepository;
+import com.campussync.repository.AssignmentSubmissionRepository;
 import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.ExamResultRepository;
@@ -39,6 +42,7 @@ public class ParentService {
     private final FeeRepository feeRepository;
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final AssignmentRepository assignmentRepository;
+    private final AssignmentSubmissionRepository assignmentSubmissionRepository;
 
     public ParentService(
             UserRepository userRepository,
@@ -48,7 +52,8 @@ public class ParentService {
             ExamResultRepository examResultRepository,
             FeeRepository feeRepository,
             CourseEnrollmentRepository courseEnrollmentRepository,
-            AssignmentRepository assignmentRepository) {
+            AssignmentRepository assignmentRepository,
+            AssignmentSubmissionRepository assignmentSubmissionRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
@@ -57,6 +62,7 @@ public class ParentService {
         this.feeRepository = feeRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.assignmentRepository = assignmentRepository;
+        this.assignmentSubmissionRepository = assignmentSubmissionRepository;
     }
 
     @Transactional(readOnly = true)
@@ -290,6 +296,102 @@ public class ParentService {
                         .attachmentUrl(assignment.getAttachmentUrl())
                         .active(assignment.isActive())
                         .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssignmentProgressDTO> getChildAssignmentProgress(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        CourseEnrollment enrollment = courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() ->
+                        new RuntimeException("Active enrollment not found"));
+
+        List<Assignment> assignments =
+                assignmentRepository.findByCourseAndSemesterAndAcademicYear(
+                        enrollment.getCourse(),
+                        enrollment.getSemester(),
+                        enrollment.getAcademicYear()
+                );
+
+        List<AssignmentSubmission> submissions =
+                assignmentSubmissionRepository.findByStudent(student);
+
+        return assignments.stream()
+                .map(assignment -> {
+
+                    AssignmentSubmission submission = submissions.stream()
+                            .filter(s -> s.getAssignment().getAssignmentId()
+                                    .equals(assignment.getAssignmentId()))
+                            .findFirst()
+                            .orElse(null);
+
+                    return AssignmentProgressDTO.builder()
+                            .assignmentId(assignment.getAssignmentId())
+                            .title(assignment.getTitle())
+                            .description(assignment.getDescription())
+                            .subjectName(
+                                    assignment.getSubject() != null
+                                            ? assignment.getSubject().getSubjectName()
+                                            : null
+                            )
+                            .teacherName(
+                                    assignment.getTeacher() != null
+                                            && assignment.getTeacher().getUser() != null
+                                            ? assignment.getTeacher()
+                                                    .getUser()
+                                                    .getFirstName()
+                                            : null
+                            )
+                            .assignedDate(assignment.getAssignedDate())
+                            .dueDate(assignment.getDueDate())
+                            .attachmentUrl(assignment.getAttachmentUrl())
+                            .active(assignment.isActive())
+
+                            .submissionId(
+                                    submission != null
+                                            ? submission.getSubmissionId()
+                                            : null
+                            )
+                            .submissionDate(
+                                    submission != null
+                                            ? submission.getSubmissionDate()
+                                            : null
+                            )
+                            .fileUrl(
+                                    submission != null
+                                            ? submission.getFileUrl()
+                                            : null
+                            )
+                            .submissionStatus(
+                                    submission != null
+                                            ? submission.getStatus().name()
+                                            : null
+                            )
+                            .marks(
+                                    submission != null
+                                            ? submission.getMarks()
+                                            : null
+                            )
+                            .feedback(
+                                    submission != null
+                                            ? submission.getFeedback()
+                                            : null
+                            )
+                            .build();
+                })
                 .toList();
     }
 }
