@@ -1,18 +1,23 @@
 package com.campussync.service;
 
+import com.campussync.dto.AssignmentResponseDTO;
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
+import com.campussync.entity.Assignment;
 import com.campussync.entity.Attendance;
+import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
+import com.campussync.repository.AssignmentRepository;
 import com.campussync.repository.AttendanceRepository;
+import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
 import com.campussync.repository.ParentRepository;
@@ -32,6 +37,8 @@ public class ParentService {
     private final AttendanceRepository attendanceRepository;
     private final ExamResultRepository examResultRepository;
     private final FeeRepository feeRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final AssignmentRepository assignmentRepository;
 
     public ParentService(
             UserRepository userRepository,
@@ -39,13 +46,17 @@ public class ParentService {
             StudentRepository studentRepository,
             AttendanceRepository attendanceRepository,
             ExamResultRepository examResultRepository,
-            FeeRepository feeRepository) {
+            FeeRepository feeRepository,
+            CourseEnrollmentRepository courseEnrollmentRepository,
+            AssignmentRepository assignmentRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
         this.examResultRepository = examResultRepository;
         this.feeRepository = feeRepository;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.assignmentRepository = assignmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -207,6 +218,77 @@ public class ParentService {
                         .remainingAmount(fee.getRemainingAmount())
                         .dueDate(fee.getDueDate())
                         .status(fee.getStatus().name())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CourseEnrollment getActiveEnrollment(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        return courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() ->
+                        new RuntimeException("Active enrollment not found"));
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssignmentResponseDTO> getChildAssignments(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        CourseEnrollment enrollment = courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() ->
+                        new RuntimeException("Active enrollment not found"));
+
+        List<Assignment> assignments =
+                assignmentRepository.findByCourseAndSemesterAndAcademicYear(
+                        enrollment.getCourse(),
+                        enrollment.getSemester(),
+                        enrollment.getAcademicYear()
+                );
+
+        return assignments.stream()
+                .map(assignment -> AssignmentResponseDTO.builder()
+                        .assignmentId(assignment.getAssignmentId())
+                        .title(assignment.getTitle())
+                        .description(assignment.getDescription())
+                        .subjectName(
+                                assignment.getSubject() != null
+                                        ? assignment.getSubject().getSubjectName()
+                                        : null
+                        )
+                        .teacherName(
+                                assignment.getTeacher() != null && assignment.getTeacher().getUser() != null
+                                        ? assignment.getTeacher().getUser().getFirstName()
+                                        : null
+                        )
+                        .assignedDate(assignment.getAssignedDate())
+                        .dueDate(assignment.getDueDate())
+                        .attachmentUrl(assignment.getAttachmentUrl())
+                        .active(assignment.isActive())
                         .build())
                 .toList();
     }
