@@ -6,6 +6,7 @@ import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
@@ -13,6 +14,7 @@ import com.campussync.entity.Attendance;
 import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
+import com.campussync.entity.LectureNote;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
@@ -23,6 +25,7 @@ import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
+import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.UserRepository;
@@ -43,6 +46,7 @@ public class ParentService {
     private final CourseEnrollmentRepository courseEnrollmentRepository;
     private final AssignmentRepository assignmentRepository;
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
+    private final LectureNoteRepository lectureNoteRepository;
 
     public ParentService(
             UserRepository userRepository,
@@ -53,7 +57,8 @@ public class ParentService {
             FeeRepository feeRepository,
             CourseEnrollmentRepository courseEnrollmentRepository,
             AssignmentRepository assignmentRepository,
-            AssignmentSubmissionRepository assignmentSubmissionRepository) {
+            AssignmentSubmissionRepository assignmentSubmissionRepository,
+            LectureNoteRepository lectureNoteRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
@@ -63,6 +68,7 @@ public class ParentService {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.assignmentRepository = assignmentRepository;
         this.assignmentSubmissionRepository = assignmentSubmissionRepository;
+        this.lectureNoteRepository = lectureNoteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -392,6 +398,60 @@ public class ParentService {
                             )
                             .build();
                 })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LectureNoteResponseDTO> getChildLectureNotes(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        CourseEnrollment enrollment = courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() ->
+                        new RuntimeException("Active enrollment not found"));
+
+        List<LectureNote> notes =
+                lectureNoteRepository.findBySubjectSemesterAndAcademicYear(
+                        enrollment.getSemester(),
+                        enrollment.getAcademicYear()
+                );
+
+        return notes.stream()
+                .map(note -> LectureNoteResponseDTO.builder()
+                        .noteId(note.getNoteId())
+                        .title(note.getTitle())
+                        .description(note.getDescription())
+                        .subjectName(
+                                note.getSubject() != null
+                                        ? note.getSubject().getSubjectName()
+                                        : null
+                        )
+                        .teacherName(
+                                note.getTeacher() != null
+                                        && note.getTeacher().getUser() != null
+                                        ? note.getTeacher()
+                                                .getUser()
+                                                .getFirstName()
+                                        : null
+                        )
+                        .fileName(note.getFileName())
+                        .fileType(note.getFileType())
+                        .fileSize(note.getFileSize())
+                        .fileUrl(note.getFileUrl())
+                        .uploadedAt(note.getUploadedAt())
+                        .active(note.isActive())
+                        .build())
                 .toList();
     }
 }
