@@ -4,6 +4,7 @@ import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.service.ParentService;
 import org.springframework.http.ResponseEntity;
@@ -75,5 +76,14 @@ public class ParentController {
         String email = authentication.getName();
         List<AssignmentProgressDTO> assignments = parentService.getChildAssignmentProgress(email, studentId);
         return ResponseEntity.ok(assignments);
+    }
+
+    @GetMapping("/students/{studentId}/lecture-notes")
+    public ResponseEntity<List<LectureNoteResponseDTO>> getChildLectureNotes(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<LectureNoteResponseDTO> notes = parentService.getChildLectureNotes(email, studentId);
+        return ResponseEntity.ok(notes);
     }
 }
