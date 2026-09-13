@@ -8,6 +8,7 @@ import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
+import com.campussync.dto.TimetableResponseDTO;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
@@ -17,6 +18,7 @@ import com.campussync.entity.Fee;
 import com.campussync.entity.LectureNote;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
+import com.campussync.entity.Timetable;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.repository.AssignmentRepository;
@@ -28,6 +30,7 @@ import com.campussync.repository.FeeRepository;
 import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
+import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +50,7 @@ public class ParentService {
     private final AssignmentRepository assignmentRepository;
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     private final LectureNoteRepository lectureNoteRepository;
+    private final TimetableRepository timetableRepository;
 
     public ParentService(
             UserRepository userRepository,
@@ -58,7 +62,8 @@ public class ParentService {
             CourseEnrollmentRepository courseEnrollmentRepository,
             AssignmentRepository assignmentRepository,
             AssignmentSubmissionRepository assignmentSubmissionRepository,
-            LectureNoteRepository lectureNoteRepository) {
+            LectureNoteRepository lectureNoteRepository,
+            TimetableRepository timetableRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
@@ -69,6 +74,7 @@ public class ParentService {
         this.assignmentRepository = assignmentRepository;
         this.assignmentSubmissionRepository = assignmentSubmissionRepository;
         this.lectureNoteRepository = lectureNoteRepository;
+        this.timetableRepository = timetableRepository;
     }
 
     @Transactional(readOnly = true)
@@ -451,6 +457,54 @@ public class ParentService {
                         .fileUrl(note.getFileUrl())
                         .uploadedAt(note.getUploadedAt())
                         .active(note.isActive())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TimetableResponseDTO> getChildTimetable(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        CourseEnrollment enrollment = courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() ->
+                        new RuntimeException("Active enrollment not found"));
+
+        List<Timetable> timetableList = timetableRepository
+                .findByCourseAndSemesterOrderByDayOfWeekAscStartTimeAsc(
+                        enrollment.getCourse(),
+                        enrollment.getSemester()
+                );
+
+        return timetableList.stream()
+                .map(slot -> TimetableResponseDTO.builder()
+                        .timetableId(slot.getTimetableId())
+                        .subjectName(
+                                slot.getSubject() != null
+                                        ? slot.getSubject().getSubjectName()
+                                        : null
+                        )
+                        .teacherName(
+                                slot.getTeacher() != null && slot.getTeacher().getUser() != null
+                                        ? slot.getTeacher().getUser().getFirstName()
+                                        : null
+                        )
+                        .dayOfWeek(slot.getDayOfWeek())
+                        .startTime(slot.getStartTime())
+                        .endTime(slot.getEndTime())
+                        .roomNumber(slot.getRoomNumber())
+                        .division(slot.getDivision())
                         .build())
                 .toList();
     }

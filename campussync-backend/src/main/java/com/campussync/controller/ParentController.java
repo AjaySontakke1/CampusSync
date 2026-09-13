@@ -6,6 +6,7 @@ import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
+import com.campussync.dto.TimetableResponseDTO;
 import com.campussync.service.ParentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -85,5 +86,14 @@ public class ParentController {
         String email = authentication.getName();
         List<LectureNoteResponseDTO> notes = parentService.getChildLectureNotes(email, studentId);
         return ResponseEntity.ok(notes);
+    }
+
+    @GetMapping("/students/{studentId}/timetable")
+    public ResponseEntity<List<TimetableResponseDTO>> getChildTimetable(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<TimetableResponseDTO> timetable = parentService.getChildTimetable(email, studentId);
+        return ResponseEntity.ok(timetable);
     }
 }
