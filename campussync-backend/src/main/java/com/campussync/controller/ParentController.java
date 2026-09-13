@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.AnnouncementResponseDTO;
 import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
@@ -95,5 +96,13 @@ public class ParentController {
         String email = authentication.getName();
         List<TimetableResponseDTO> timetable = parentService.getChildTimetable(email, studentId);
         return ResponseEntity.ok(timetable);
+    }
+
+    @GetMapping("/announcements")
+    public ResponseEntity<List<AnnouncementResponseDTO>> getAnnouncements(
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<AnnouncementResponseDTO> announcements = parentService.getActiveAnnouncements(email);
+        return ResponseEntity.ok(announcements);
     }
 }

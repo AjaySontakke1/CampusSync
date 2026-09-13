@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.AnnouncementResponseDTO;
 import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AssignmentResponseDTO;
 import com.campussync.dto.AttendanceRecordDTO;
@@ -9,6 +10,7 @@ import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
+import com.campussync.entity.Announcement;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
@@ -21,6 +23,7 @@ import com.campussync.entity.Student;
 import com.campussync.entity.Timetable;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
+import com.campussync.repository.AnnouncementRepository;
 import com.campussync.repository.AssignmentRepository;
 import com.campussync.repository.AssignmentSubmissionRepository;
 import com.campussync.repository.AttendanceRepository;
@@ -51,6 +54,7 @@ public class ParentService {
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     private final LectureNoteRepository lectureNoteRepository;
     private final TimetableRepository timetableRepository;
+    private final AnnouncementRepository announcementRepository;
 
     public ParentService(
             UserRepository userRepository,
@@ -63,7 +67,8 @@ public class ParentService {
             AssignmentRepository assignmentRepository,
             AssignmentSubmissionRepository assignmentSubmissionRepository,
             LectureNoteRepository lectureNoteRepository,
-            TimetableRepository timetableRepository) {
+            TimetableRepository timetableRepository,
+            AnnouncementRepository announcementRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
@@ -75,6 +80,7 @@ public class ParentService {
         this.assignmentSubmissionRepository = assignmentSubmissionRepository;
         this.lectureNoteRepository = lectureNoteRepository;
         this.timetableRepository = timetableRepository;
+        this.announcementRepository = announcementRepository;
     }
 
     @Transactional(readOnly = true)
@@ -505,6 +511,26 @@ public class ParentService {
                         .endTime(slot.getEndTime())
                         .roomNumber(slot.getRoomNumber())
                         .division(slot.getDivision())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnnouncementResponseDTO> getActiveAnnouncements(String email) {
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Announcement> announcements =
+                announcementRepository.findByActiveTrueOrderByCreatedAtDesc();
+
+        return announcements.stream()
+                .map(a -> AnnouncementResponseDTO.builder()
+                        .announcementId(a.getAnnouncementId())
+                        .title(a.getTitle())
+                        .message(a.getMessage())
+                        .priority(a.getPriority() != null ? a.getPriority().name() : null)
+                        .createdAt(a.getCreatedAt())
+                        .expiresAt(a.getExpiresAt())
                         .build())
                 .toList();
     }
