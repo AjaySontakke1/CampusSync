@@ -5,6 +5,7 @@ import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
@@ -104,5 +105,14 @@ public class ParentController {
         String email = authentication.getName();
         List<AnnouncementResponseDTO> announcements = parentService.getActiveAnnouncements(email);
         return ResponseEntity.ok(announcements);
+    }
+
+    @GetMapping("/students/{studentId}/leave-requests")
+    public ResponseEntity<List<LeaveRequestResponseDTO>> getChildLeaveRequests(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        String email = authentication.getName();
+        List<LeaveRequestResponseDTO> leaveRequests = parentService.getChildLeaveRequests(email, studentId);
+        return ResponseEntity.ok(leaveRequests);
     }
 }

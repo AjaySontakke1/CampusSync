@@ -7,6 +7,7 @@ import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
@@ -17,6 +18,7 @@ import com.campussync.entity.Attendance;
 import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
+import com.campussync.entity.LeaveRequest;
 import com.campussync.entity.LectureNote;
 import com.campussync.entity.Parent;
 import com.campussync.entity.Student;
@@ -30,6 +32,7 @@ import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
+import com.campussync.repository.LeaveRequestRepository;
 import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
@@ -55,6 +58,7 @@ public class ParentService {
     private final LectureNoteRepository lectureNoteRepository;
     private final TimetableRepository timetableRepository;
     private final AnnouncementRepository announcementRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
 
     public ParentService(
             UserRepository userRepository,
@@ -68,7 +72,8 @@ public class ParentService {
             AssignmentSubmissionRepository assignmentSubmissionRepository,
             LectureNoteRepository lectureNoteRepository,
             TimetableRepository timetableRepository,
-            AnnouncementRepository announcementRepository) {
+            AnnouncementRepository announcementRepository,
+            LeaveRequestRepository leaveRequestRepository) {
         this.userRepository = userRepository;
         this.parentRepository = parentRepository;
         this.studentRepository = studentRepository;
@@ -81,6 +86,7 @@ public class ParentService {
         this.lectureNoteRepository = lectureNoteRepository;
         this.timetableRepository = timetableRepository;
         this.announcementRepository = announcementRepository;
+        this.leaveRequestRepository = leaveRequestRepository;
     }
 
     @Transactional(readOnly = true)
@@ -531,6 +537,43 @@ public class ParentService {
                         .priority(a.getPriority() != null ? a.getPriority().name() : null)
                         .createdAt(a.getCreatedAt())
                         .expiresAt(a.getExpiresAt())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeaveRequestResponseDTO> getChildLeaveRequests(
+            String email,
+            Long studentId) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Parent parent = parentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Parent not found"));
+
+        Student student = studentRepository
+                .findByStudentIdAndParent(studentId, parent)
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        List<LeaveRequest> leaveRequests =
+                leaveRequestRepository.findByStudentOrderByAppliedAtDesc(student);
+
+        return leaveRequests.stream()
+                .map(lr -> LeaveRequestResponseDTO.builder()
+                        .leaveRequestId(lr.getLeaveRequestId())
+                        .fromDate(lr.getFromDate())
+                        .toDate(lr.getToDate())
+                        .reason(lr.getReason())
+                        .status(lr.getStatus() != null ? lr.getStatus().name() : null)
+                        .appliedAt(lr.getAppliedAt())
+                        .approvedByName(
+                                lr.getApprovedBy() != null && lr.getApprovedBy().getUser() != null
+                                        ? lr.getApprovedBy().getUser().getFirstName()
+                                        : null
+                        )
+                        .approvedAt(lr.getApprovedAt())
+                        .remarks(lr.getRemarks())
                         .build())
                 .toList();
     }
