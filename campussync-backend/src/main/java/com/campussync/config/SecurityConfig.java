@@ -24,6 +24,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/parent/**").hasRole("PARENT")
+                .requestMatchers("/api/student/**").hasRole("STUDENT")
                 .anyRequest().authenticated()
             );
         return http.build();
