@@ -2,6 +2,7 @@ package com.campussync.controller;
 
 import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
+import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.service.StudentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,5 +34,12 @@ public class StudentController {
         String email = authentication.getName();
         AttendanceResponseDTO attendance = studentService.getMyAttendance(email);
         return ResponseEntity.ok(attendance);
+    }
+
+    @GetMapping("/results")
+    public ResponseEntity<List<ExamResultResponseDTO>> getMyExamResults(Authentication authentication) {
+        String email = authentication.getName();
+        List<ExamResultResponseDTO> results = studentService.getMyExamResults(email);
+        return ResponseEntity.ok(results);
     }
 }
