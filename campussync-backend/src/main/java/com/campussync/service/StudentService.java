@@ -3,10 +3,12 @@ package com.campussync.service;
 import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
+import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.CourseEnrollment;
+import com.campussync.entity.ExamResult;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
@@ -14,6 +16,7 @@ import com.campussync.repository.AssignmentRepository;
 import com.campussync.repository.AssignmentSubmissionRepository;
 import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.CourseEnrollmentRepository;
+import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,7 @@ public class StudentService {
     private final AssignmentRepository assignmentRepository;
     private final AssignmentSubmissionRepository assignmentSubmissionRepository;
     private final AttendanceRepository attendanceRepository;
+    private final ExamResultRepository examResultRepository;
 
     public StudentService(
             UserRepository userRepository,
@@ -37,13 +41,15 @@ public class StudentService {
             CourseEnrollmentRepository courseEnrollmentRepository,
             AssignmentRepository assignmentRepository,
             AssignmentSubmissionRepository assignmentSubmissionRepository,
-            AttendanceRepository attendanceRepository) {
+            AttendanceRepository attendanceRepository,
+            ExamResultRepository examResultRepository) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
         this.assignmentRepository = assignmentRepository;
         this.assignmentSubmissionRepository = assignmentSubmissionRepository;
         this.attendanceRepository = attendanceRepository;
+        this.examResultRepository = examResultRepository;
     }
 
     @Transactional(readOnly = true)
@@ -130,5 +136,34 @@ public class StudentService {
                 .attendancePercentage(Math.round(percentage * 100.0) / 100.0)
                 .records(records)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExamResultResponseDTO> getMyExamResults(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student profile not found"));
+
+        List<ExamResult> results = examResultRepository.findByStudent(student);
+
+        return results.stream()
+                .map(result -> ExamResultResponseDTO.builder()
+                        .resultId(result.getResultId())
+                        .examTitle(result.getExam() != null ? result.getExam().getTitle() : null)
+                        .examType(result.getExam() != null && result.getExam().getExamType() != null ? result.getExam().getExamType().name() : null)
+                        .subjectName(result.getExam() != null && result.getExam().getSubject() != null
+                                ? result.getExam().getSubject().getSubjectName()
+                                : null)
+                        .examDate(result.getExam() != null ? result.getExam().getExamDate() : null)
+                        .marksObtained(result.getMarksObtained())
+                        .maxMarks(result.getMaxMarks())
+                        .grade(result.getGrade())
+                        .status(result.getStatus() != null ? result.getStatus().name() : null)
+                        .remarks(result.getRemarks())
+                        .publishedAt(result.getPublishedAt())
+                        .build())
+                .toList();
     }
 }
