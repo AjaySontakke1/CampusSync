@@ -23,23 +23,38 @@ public class StudentController {
     }
 
     @GetMapping("/assignments")
-    public ResponseEntity<List<AssignmentProgressDTO>> getMyAssignments(Authentication authentication) {
+    public ResponseEntity<List<AssignmentProgressDTO>> getMyAssignments(
+            Authentication authentication) {
+
         String email = authentication.getName();
-        List<AssignmentProgressDTO> assignments = studentService.getMyAssignments(email);
+
+        List<AssignmentProgressDTO> assignments =
+                studentService.getMyAssignments(email);
+
         return ResponseEntity.ok(assignments);
     }
 
     @GetMapping("/attendance")
-    public ResponseEntity<AttendanceResponseDTO> getMyAttendance(Authentication authentication) {
+    public ResponseEntity<AttendanceResponseDTO> getMyAttendance(
+            Authentication authentication) {
+
         String email = authentication.getName();
-        AttendanceResponseDTO attendance = studentService.getMyAttendance(email);
+
+        AttendanceResponseDTO attendance =
+                studentService.getMyAttendance(email);
+
         return ResponseEntity.ok(attendance);
     }
 
     @GetMapping("/results")
-    public ResponseEntity<List<ExamResultResponseDTO>> getMyExamResults(Authentication authentication) {
+    public ResponseEntity<List<ExamResultResponseDTO>> getMyExamResults(
+            Authentication authentication) {
+
         String email = authentication.getName();
-        List<ExamResultResponseDTO> results = studentService.getMyExamResults(email);
+
+        List<ExamResultResponseDTO> results =
+                studentService.getMyExamResults(email);
+
         return ResponseEntity.ok(results);
     }
 }
