@@ -5,6 +5,7 @@ import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
+import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
 import com.campussync.service.StudentService;
 import org.springframework.http.ResponseEntity;
@@ -95,5 +96,17 @@ public class StudentController {
                 studentService.getMyTimetable(email);
 
         return ResponseEntity.ok(timetable);
+    }
+
+    @GetMapping("/leave-requests")
+    public ResponseEntity<List<LeaveRequestResponseDTO>> getMyLeaveRequests(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        List<LeaveRequestResponseDTO> leaveRequests =
+                studentService.getMyLeaveRequests(email);
+
+        return ResponseEntity.ok(leaveRequests);
     }
 }
