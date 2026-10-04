@@ -6,6 +6,7 @@ import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
+import com.campussync.dto.TimetableResponseDTO;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
@@ -14,6 +15,7 @@ import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
 import com.campussync.entity.LectureNote;
 import com.campussync.entity.Student;
+import com.campussync.entity.Timetable;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.repository.AssignmentRepository;
@@ -24,6 +26,7 @@ import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
 import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.StudentRepository;
+import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +45,7 @@ public class StudentService {
     private final ExamResultRepository examResultRepository;
     private final FeeRepository feeRepository;
     private final LectureNoteRepository lectureNoteRepository;
+    private final TimetableRepository timetableRepository;
 
     public StudentService(
             UserRepository userRepository,
@@ -52,7 +56,8 @@ public class StudentService {
             AttendanceRepository attendanceRepository,
             ExamResultRepository examResultRepository,
             FeeRepository feeRepository,
-            LectureNoteRepository lectureNoteRepository) {
+            LectureNoteRepository lectureNoteRepository,
+            TimetableRepository timetableRepository) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -62,6 +67,7 @@ public class StudentService {
         this.examResultRepository = examResultRepository;
         this.feeRepository = feeRepository;
         this.lectureNoteRepository = lectureNoteRepository;
+        this.timetableRepository = timetableRepository;
     }
 
     @Transactional(readOnly = true)
@@ -249,6 +255,44 @@ public class StudentService {
                         .fileUrl(note.getFileUrl())
                         .uploadedAt(note.getUploadedAt())
                         .active(note.isActive())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TimetableResponseDTO> getMyTimetable(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student profile not found"));
+
+        CourseEnrollment enrollment = courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() -> new RuntimeException("Active enrollment not found"));
+
+        List<Timetable> timetableList =
+                timetableRepository.findByCourseAndSemesterOrderByDayOfWeekAscStartTimeAsc(
+                        enrollment.getCourse(),
+                        enrollment.getSemester()
+                );
+
+        return timetableList.stream()
+                .map(timetable -> TimetableResponseDTO.builder()
+                        .timetableId(timetable.getTimetableId())
+                        .subjectName(timetable.getSubject() != null
+                                ? timetable.getSubject().getSubjectName()
+                                : null)
+                        .teacherName(timetable.getTeacher() != null
+                                && timetable.getTeacher().getUser() != null
+                                ? timetable.getTeacher().getUser().getFirstName()
+                                : null)
+                        .dayOfWeek(timetable.getDayOfWeek())
+                        .startTime(timetable.getStartTime())
+                        .endTime(timetable.getEndTime())
+                        .roomNumber(timetable.getRoomNumber())
+                        .division(timetable.getDivision())
                         .build())
                 .toList();
     }
