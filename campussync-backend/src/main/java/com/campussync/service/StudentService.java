@@ -6,6 +6,7 @@ import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
+import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
@@ -14,6 +15,7 @@ import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
 import com.campussync.entity.LectureNote;
+import com.campussync.entity.LeaveRequest;
 import com.campussync.entity.Student;
 import com.campussync.entity.Timetable;
 import com.campussync.entity.User;
@@ -25,6 +27,7 @@ import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
 import com.campussync.repository.LectureNoteRepository;
+import com.campussync.repository.LeaveRequestRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
@@ -46,6 +49,7 @@ public class StudentService {
     private final FeeRepository feeRepository;
     private final LectureNoteRepository lectureNoteRepository;
     private final TimetableRepository timetableRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
 
     public StudentService(
             UserRepository userRepository,
@@ -57,7 +61,8 @@ public class StudentService {
             ExamResultRepository examResultRepository,
             FeeRepository feeRepository,
             LectureNoteRepository lectureNoteRepository,
-            TimetableRepository timetableRepository) {
+            TimetableRepository timetableRepository,
+            LeaveRequestRepository leaveRequestRepository) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -68,6 +73,7 @@ public class StudentService {
         this.feeRepository = feeRepository;
         this.lectureNoteRepository = lectureNoteRepository;
         this.timetableRepository = timetableRepository;
+        this.leaveRequestRepository = leaveRequestRepository;
     }
 
     @Transactional(readOnly = true)
@@ -293,6 +299,38 @@ public class StudentService {
                         .endTime(timetable.getEndTime())
                         .roomNumber(timetable.getRoomNumber())
                         .division(timetable.getDivision())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeaveRequestResponseDTO> getMyLeaveRequests(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student profile not found"));
+
+        List<LeaveRequest> leaveRequests =
+                leaveRequestRepository.findByStudentOrderByAppliedAtDesc(student);
+
+        return leaveRequests.stream()
+                .map(leaveRequest -> LeaveRequestResponseDTO.builder()
+                        .leaveRequestId(leaveRequest.getLeaveRequestId())
+                        .fromDate(leaveRequest.getFromDate())
+                        .toDate(leaveRequest.getToDate())
+                        .reason(leaveRequest.getReason())
+                        .status(leaveRequest.getStatus() != null
+                                ? leaveRequest.getStatus().name()
+                                : null)
+                        .appliedAt(leaveRequest.getAppliedAt())
+                        .approvedByName(leaveRequest.getApprovedBy() != null
+                                && leaveRequest.getApprovedBy().getUser() != null
+                                ? leaveRequest.getApprovedBy().getUser().getFirstName()
+                                : null)
+                        .approvedAt(leaveRequest.getApprovedAt())
+                        .remarks(leaveRequest.getRemarks())
                         .build())
                 .toList();
     }
