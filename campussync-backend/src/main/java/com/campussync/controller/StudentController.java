@@ -5,6 +5,7 @@ import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
+import com.campussync.dto.TimetableResponseDTO;
 import com.campussync.service.StudentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -82,5 +83,17 @@ public class StudentController {
                 studentService.getMyLectureNotes(email);
 
         return ResponseEntity.ok(notes);
+    }
+
+    @GetMapping("/timetable")
+    public ResponseEntity<List<TimetableResponseDTO>> getMyTimetable(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        List<TimetableResponseDTO> timetable =
+                studentService.getMyTimetable(email);
+
+        return ResponseEntity.ok(timetable);
     }
 }
