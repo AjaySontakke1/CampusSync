@@ -5,12 +5,14 @@ import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
+import com.campussync.entity.LectureNote;
 import com.campussync.entity.Student;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
@@ -20,6 +22,7 @@ import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
+import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,7 @@ public class StudentService {
     private final AttendanceRepository attendanceRepository;
     private final ExamResultRepository examResultRepository;
     private final FeeRepository feeRepository;
+    private final LectureNoteRepository lectureNoteRepository;
 
     public StudentService(
             UserRepository userRepository,
@@ -47,7 +51,8 @@ public class StudentService {
             AssignmentSubmissionRepository assignmentSubmissionRepository,
             AttendanceRepository attendanceRepository,
             ExamResultRepository examResultRepository,
-            FeeRepository feeRepository) {
+            FeeRepository feeRepository,
+            LectureNoteRepository lectureNoteRepository) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -56,6 +61,7 @@ public class StudentService {
         this.attendanceRepository = attendanceRepository;
         this.examResultRepository = examResultRepository;
         this.feeRepository = feeRepository;
+        this.lectureNoteRepository = lectureNoteRepository;
     }
 
     @Transactional(readOnly = true)
@@ -202,6 +208,47 @@ public class StudentService {
                         .status(fee.getStatus() != null
                                 ? fee.getStatus().name()
                                 : null)
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LectureNoteResponseDTO> getMyLectureNotes(String email) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new RuntimeException("Student profile not found"));
+
+        CourseEnrollment enrollment = courseEnrollmentRepository
+                .findByStudentAndActiveTrue(student)
+                .orElseThrow(() -> new RuntimeException("Active enrollment not found"));
+
+        List<LectureNote> notes =
+                lectureNoteRepository.findBySubjectSemesterAndAcademicYear(
+                        enrollment.getSemester(),
+                        enrollment.getAcademicYear()
+                );
+
+        return notes.stream()
+                .map(note -> LectureNoteResponseDTO.builder()
+                        .noteId(note.getNoteId())
+                        .title(note.getTitle())
+                        .description(note.getDescription())
+                        .subjectName(note.getSubject() != null
+                                ? note.getSubject().getSubjectName()
+                                : null)
+                        .teacherName(note.getTeacher() != null
+                                && note.getTeacher().getUser() != null
+                                ? note.getTeacher().getUser().getFirstName()
+                                : null)
+                        .fileName(note.getFileName())
+                        .fileType(note.getFileType())
+                        .fileSize(note.getFileSize())
+                        .fileUrl(note.getFileUrl())
+                        .uploadedAt(note.getUploadedAt())
+                        .active(note.isActive())
                         .build())
                 .toList();
     }
