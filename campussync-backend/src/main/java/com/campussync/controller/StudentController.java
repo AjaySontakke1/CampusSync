@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.AnnouncementResponseDTO;
 import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
@@ -108,5 +109,14 @@ public class StudentController {
                 studentService.getMyLeaveRequests(email);
 
         return ResponseEntity.ok(leaveRequests);
+    }
+
+    @GetMapping("/announcements")
+    public ResponseEntity<List<AnnouncementResponseDTO>> getMyAnnouncements() {
+
+        List<AnnouncementResponseDTO> announcements =
+                studentService.getMyAnnouncements();
+
+        return ResponseEntity.ok(announcements);
     }
 }
