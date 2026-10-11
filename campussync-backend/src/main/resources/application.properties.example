@@ -14,3 +14,7 @@ spring.jpa.properties.hibernate.format_sql=true
 
 # MySQL Dialect
 spring.jpa.database-platform=org.hibernate.dialect.MySQLDialect
+
+# JWT Configuration
+jwt.secret=${JWT_SECRET}
+jwt.expiration-ms=900000
