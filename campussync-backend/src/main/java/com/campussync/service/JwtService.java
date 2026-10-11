@@ -1,6 +1,7 @@
 package com.campussync.service;
 
 import com.campussync.entity.User;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -36,5 +37,13 @@ public class JwtService {
                 .expiration(Date.from(now.plusMillis(expirationMs)))
                 .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
+    }
+
+    public Claims extractClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }
