@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.AnnouncementResponseDTO;
 import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponseDTO;
@@ -8,6 +9,7 @@ import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
+import com.campussync.entity.Announcement;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
 import com.campussync.entity.Attendance;
@@ -20,6 +22,7 @@ import com.campussync.entity.Student;
 import com.campussync.entity.Timetable;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
+import com.campussync.repository.AnnouncementRepository;
 import com.campussync.repository.AssignmentRepository;
 import com.campussync.repository.AssignmentSubmissionRepository;
 import com.campussync.repository.AttendanceRepository;
@@ -50,6 +53,7 @@ public class StudentService {
     private final LectureNoteRepository lectureNoteRepository;
     private final TimetableRepository timetableRepository;
     private final LeaveRequestRepository leaveRequestRepository;
+    private final AnnouncementRepository announcementRepository;
 
     public StudentService(
             UserRepository userRepository,
@@ -62,7 +66,8 @@ public class StudentService {
             FeeRepository feeRepository,
             LectureNoteRepository lectureNoteRepository,
             TimetableRepository timetableRepository,
-            LeaveRequestRepository leaveRequestRepository) {
+            LeaveRequestRepository leaveRequestRepository,
+            AnnouncementRepository announcementRepository) {
         this.userRepository = userRepository;
         this.studentRepository = studentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -74,6 +79,7 @@ public class StudentService {
         this.lectureNoteRepository = lectureNoteRepository;
         this.timetableRepository = timetableRepository;
         this.leaveRequestRepository = leaveRequestRepository;
+        this.announcementRepository = announcementRepository;
     }
 
     @Transactional(readOnly = true)
@@ -331,6 +337,26 @@ public class StudentService {
                                 : null)
                         .approvedAt(leaveRequest.getApprovedAt())
                         .remarks(leaveRequest.getRemarks())
+                        .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnnouncementResponseDTO> getMyAnnouncements() {
+
+        List<Announcement> announcements =
+                announcementRepository.findByActiveTrueOrderByCreatedAtDesc();
+
+        return announcements.stream()
+                .map(announcement -> AnnouncementResponseDTO.builder()
+                        .announcementId(announcement.getAnnouncementId())
+                        .title(announcement.getTitle())
+                        .message(announcement.getMessage())
+                        .priority(announcement.getPriority() != null
+                                ? announcement.getPriority().name()
+                                : null)
+                        .createdAt(announcement.getCreatedAt())
+                        .expiresAt(announcement.getExpiresAt())
                         .build())
                 .toList();
     }
