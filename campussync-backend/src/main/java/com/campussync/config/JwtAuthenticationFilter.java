@@ -1,5 +1,6 @@
 package com.campussync.config;
 
+import com.campussync.enums.Role;
 import com.campussync.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -52,9 +53,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (email == null || email.isBlank()
                     || role == null || role.isBlank()) {
+                SecurityContextHolder.clearContext();
                 response.sendError(
                         HttpServletResponse.SC_UNAUTHORIZED,
                         "Invalid JWT claims");
+                return;
+            }
+
+            try {
+                Role.valueOf(role);
+            } catch (IllegalArgumentException ex) {
+                SecurityContextHolder.clearContext();
+                response.sendError(
+                        HttpServletResponse.SC_UNAUTHORIZED,
+                        "Invalid JWT role");
                 return;
             }
 
