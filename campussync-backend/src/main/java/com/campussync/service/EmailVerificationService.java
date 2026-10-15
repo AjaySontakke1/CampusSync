@@ -50,16 +50,28 @@ public class EmailVerificationService {
 
     @Transactional
     public void verifyEmail(String token) {
-        VerificationToken verificationToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
+        VerificationToken verificationToken =
+                tokenRepository.findByToken(token)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Invalid verification token"));
 
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expired");
+        if (!verificationToken.getExpiryDate()
+                .isAfter(LocalDateTime.now())) {
+            tokenRepository.delete(verificationToken);
+            throw new IllegalArgumentException(
+                "Verification token has expired");
         }
 
         User user = verificationToken.getUser();
-        user.setEmailVerified(true);
-        userRepository.save(user);
+
+        if (!user.isEmailVerified()) {
+            user.setEmailVerified(true);
+            userRepository.save(user);
+        }
+
+        // Make the verification token single-use.
+        tokenRepository.delete(verificationToken);
     }
 
     @Transactional
