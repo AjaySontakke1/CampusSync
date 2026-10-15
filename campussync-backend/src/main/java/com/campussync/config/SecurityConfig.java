@@ -1,5 +1,6 @@
 package com.campussync.config;
 
+import com.campussync.repository.UserRepository;
 import com.campussync.service.JwtService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,10 +24,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtService jwtService) throws Exception {
+            JwtService jwtService,
+            UserRepository userRepository) throws Exception {
 
         JwtAuthenticationFilter jwtFilter =
-                new JwtAuthenticationFilter(jwtService);
+                new JwtAuthenticationFilter(jwtService, userRepository);
 
         http
             .csrf(csrf -> csrf.disable())
