@@ -98,34 +98,46 @@ public class EmailVerificationService {
 
     @Transactional
     public void setPassword(SetPasswordRequest request) {
-        VerificationToken verificationToken = tokenRepository.findByToken(request.getToken())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
 
+        VerificationToken verificationToken =
+                tokenRepository.findByToken(request.getToken())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Invalid password setup token"));
+
+        // Accept only password-setup tokens.
         if (verificationToken.getTokenType()
                 != TokenType.PASSWORD_SETUP) {
             throw new IllegalArgumentException(
-                    "This token cannot be used to set a password");
+                    "Invalid password setup token type");
         }
 
-        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            tokenRepository.delete(verificationToken);
-            throw new IllegalArgumentException("Token expired");
+        // Check expiry.
+        if (!verificationToken.getExpiryDate()
+                .isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException(
+                    "Password setup token has expired");
         }
 
         User user = verificationToken.getUser();
 
+        // Email must be verified first.
         if (!user.isEmailVerified()) {
-            throw new IllegalArgumentException("Email is not verified");
+            throw new IllegalArgumentException(
+                    "Please verify your email first");
         }
 
+        // Prevent changing an already-set password through this flow.
         if (user.getPassword() != null) {
-            throw new IllegalArgumentException("Password already set");
+            throw new IllegalArgumentException(
+                    "Password has already been set");
         }
 
+        // Store a hashed password, never the plain-text password.
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
 
-        // Delete token after successful password setup so it cannot be reused
+        // Make the token single-use.
         tokenRepository.delete(verificationToken);
     }
 }
