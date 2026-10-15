@@ -58,11 +58,17 @@ public class EmailVerificationService {
                                 new IllegalArgumentException(
                                         "Invalid verification token"));
 
+        if (verificationToken.getTokenType()
+                != TokenType.EMAIL_VERIFICATION) {
+            throw new IllegalArgumentException(
+                    "This token cannot verify an email");
+        }
+
         if (!verificationToken.getExpiryDate()
                 .isAfter(LocalDateTime.now())) {
             tokenRepository.delete(verificationToken);
             throw new IllegalArgumentException(
-                "Verification token has expired");
+                    "Verification token has expired");
         }
 
         User user = verificationToken.getUser();
@@ -72,27 +78,33 @@ public class EmailVerificationService {
             userRepository.save(user);
         }
 
-        // Make the verification token single-use.
         tokenRepository.delete(verificationToken);
     }
 
     @Transactional
     public void setPassword(SetPasswordRequest request) {
         VerificationToken verificationToken = tokenRepository.findByToken(request.getToken())
-                .orElseThrow(() -> new RuntimeException("Invalid token"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
+
+        if (verificationToken.getTokenType()
+                != TokenType.PASSWORD_SETUP) {
+            throw new IllegalArgumentException(
+                    "This token cannot be used to set a password");
+        }
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token expired");
+            tokenRepository.delete(verificationToken);
+            throw new IllegalArgumentException("Token expired");
         }
 
         User user = verificationToken.getUser();
 
         if (!user.isEmailVerified()) {
-            throw new RuntimeException("Email is not verified");
+            throw new IllegalArgumentException("Email is not verified");
         }
 
         if (user.getPassword() != null) {
-            throw new RuntimeException("Password already set");
+            throw new IllegalArgumentException("Password already set");
         }
 
         user.setPassword(passwordEncoder.encode(request.getPassword()));
