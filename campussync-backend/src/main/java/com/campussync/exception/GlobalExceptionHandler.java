@@ -38,6 +38,18 @@ public class GlobalExceptionHandler {
                         : "Request failed"));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, String>> handleIllegalArgument(
+            IllegalArgumentException ex) {
+
+        return ResponseEntity.badRequest()
+                .body(Map.of(
+                        "message",
+                        ex.getMessage() != null
+                                ? ex.getMessage()
+                                : "Invalid request"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(
             Exception ex) {
