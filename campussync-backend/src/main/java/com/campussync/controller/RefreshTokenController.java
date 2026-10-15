@@ -24,15 +24,22 @@ public class RefreshTokenController {
     public ResponseEntity<RefreshTokenResponse> refresh(
             @Valid @RequestBody RefreshTokenRequest request) {
 
-        String newAccessToken =
-                refreshTokenService.refreshAccessToken(
-                        request.getRefreshToken());
+        try {
+            String newAccessToken =
+                    refreshTokenService.refreshAccessToken(
+                            request.getRefreshToken());
 
-        RefreshTokenResponse response =
-                RefreshTokenResponse.builder()
-                        .accessToken(newAccessToken)
-                        .build();
+            RefreshTokenResponse response =
+                    RefreshTokenResponse.builder()
+                            .accessToken(newAccessToken)
+                            .build();
 
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException ex) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED,
+                    "Invalid or expired refresh token");
+        }
     }
 }
