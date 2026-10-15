@@ -52,33 +52,48 @@ public class EmailVerificationService {
 
     @Transactional
     public void verifyEmail(String token) {
+
         VerificationToken verificationToken =
                 tokenRepository.findByToken(token)
                         .orElseThrow(() ->
                                 new IllegalArgumentException(
                                         "Invalid verification token"));
 
+        // Accept only email-verification tokens.
         if (verificationToken.getTokenType()
                 != TokenType.EMAIL_VERIFICATION) {
             throw new IllegalArgumentException(
-                    "This token cannot verify an email");
+                    "Invalid email-verification token type");
         }
 
+        // Check token expiry.
         if (!verificationToken.getExpiryDate()
                 .isAfter(LocalDateTime.now())) {
-            tokenRepository.delete(verificationToken);
             throw new IllegalArgumentException(
                     "Verification token has expired");
         }
 
         User user = verificationToken.getUser();
 
-        if (!user.isEmailVerified()) {
-            user.setEmailVerified(true);
-            userRepository.save(user);
-        }
+        // Mark the email as verified.
+        user.setEmailVerified(true);
+        userRepository.save(user);
 
+        // Remove the email-verification token.
         tokenRepository.delete(verificationToken);
+
+        // Generate a separate password-setup token.
+        String passwordToken = tokenService.generateToken();
+
+        tokenService.createToken(
+                user,
+                passwordToken,
+                TokenType.PASSWORD_SETUP);
+
+        // Send the password-setup email.
+        emailService.sendPasswordSetupEmail(
+                user.getEmail(),
+                passwordToken);
     }
 
     @Transactional
