@@ -37,14 +37,16 @@ public class AuthController {
     public ResponseEntity<?> registerParent(
             @Valid @RequestBody ParentRegistrationRequest request) {
         parentRegistrationService.registerParent(request);
-        return ResponseEntity.ok("Parent registration request received");
+        return ResponseEntity.status(201)
+                .body("Parent registration request received");
     }
 
     @PostMapping("/register-student")
     public ResponseEntity<?> registerStudent(
             @Valid @RequestBody StudentRegistrationRequest request) {
         studentRegistrationService.registerStudent(request);
-        return ResponseEntity.ok("Student registered successfully");
+        return ResponseEntity.status(201)
+                .body("Student registered successfully");
     }
 
     @GetMapping("/verify-email")
