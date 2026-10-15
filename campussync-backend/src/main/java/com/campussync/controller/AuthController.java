@@ -1,6 +1,7 @@
 package com.campussync.controller;
 
 import com.campussync.dto.ParentRegistrationRequest;
+import com.campussync.dto.ResendVerificationRequest;
 import com.campussync.dto.StudentRegistrationRequest;
 import com.campussync.dto.SetPasswordRequest;
 import com.campussync.dto.LoginRequest;
@@ -53,6 +54,17 @@ public class AuthController {
     public ResponseEntity<String> verifyEmail(@RequestParam String token) {
         emailVerificationService.verifyEmail(token);
         return ResponseEntity.ok("Email verified successfully");
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<String> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request) {
+
+        emailVerificationService.resendVerification(
+                request.getEmail());
+
+        return ResponseEntity.ok(
+                "If the account is eligible, a verification link has been requested");
     }
 
     @PostMapping("/set-password")
