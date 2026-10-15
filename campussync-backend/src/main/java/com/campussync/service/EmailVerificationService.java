@@ -3,6 +3,7 @@ package com.campussync.service;
 import com.campussync.dto.SetPasswordRequest;
 import com.campussync.entity.User;
 import com.campussync.entity.VerificationToken;
+import com.campussync.enums.TokenType;
 import com.campussync.repository.UserRepository;
 import com.campussync.repository.VerificationTokenRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -43,7 +44,8 @@ public class EmailVerificationService {
         }
 
         String token = tokenService.generateToken();
-        tokenService.createToken(user, token);
+        tokenService.createToken(
+                user, token, TokenType.EMAIL_VERIFICATION);
 
         emailService.sendVerificationEmail(user.getEmail(), token);
     }

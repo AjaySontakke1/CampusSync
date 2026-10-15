@@ -2,7 +2,9 @@ package com.campussync.service;
 
 import com.campussync.entity.User;
 import com.campussync.entity.VerificationToken;
+import com.campussync.enums.TokenType;
 import com.campussync.repository.VerificationTokenRepository;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,7 +16,8 @@ public class VerificationTokenService {
 
     private final VerificationTokenRepository tokenRepository;
 
-    public VerificationTokenService(VerificationTokenRepository tokenRepository) {
+    public VerificationTokenService(
+            VerificationTokenRepository tokenRepository) {
         this.tokenRepository = tokenRepository;
     }
 
@@ -23,13 +26,22 @@ public class VerificationTokenService {
     }
 
     @Transactional
-    public void createToken(User user, String token) {
-        tokenRepository.deleteByUser(user);
-        VerificationToken verificationToken = VerificationToken.builder()
-                .token(token)
-                .user(user)
-                .expiryDate(LocalDateTime.now().plusMinutes(25))
-                .build();
+    public void createToken(
+            User user,
+            String token,
+            TokenType tokenType) {
+
+        tokenRepository.deleteByUserAndTokenType(user, tokenType);
+
+        VerificationToken verificationToken =
+                VerificationToken.builder()
+                        .token(token)
+                        .user(user)
+                        .tokenType(tokenType)
+                        .expiryDate(
+                                LocalDateTime.now().plusMinutes(25))
+                        .build();
+
         tokenRepository.save(verificationToken);
     }
 }

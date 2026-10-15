@@ -1,6 +1,7 @@
 package com.campussync.repository;
 
 import com.campussync.entity.VerificationToken;
+import com.campussync.enums.TokenType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +12,5 @@ import java.util.Optional;
 public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Long> {
     Optional<VerificationToken> findByToken(String token);
     void deleteByUser(User user);
+    void deleteByUserAndTokenType(User user, TokenType tokenType);
 }
