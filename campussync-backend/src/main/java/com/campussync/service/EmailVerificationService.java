@@ -36,18 +36,29 @@ public class EmailVerificationService {
 
     @Transactional
     public void resendVerification(String email) {
+
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("User not found"));
 
         if (user.isEmailVerified()) {
-            throw new RuntimeException("Email already verified");
+            throw new IllegalArgumentException(
+                    "Email is already verified");
         }
 
+        // Generate a new verification token.
         String token = tokenService.generateToken();
-        tokenService.createToken(
-                user, token, TokenType.EMAIL_VERIFICATION);
 
-        emailService.sendVerificationEmail(user.getEmail(), token);
+        // Save it as an email-verification token.
+        tokenService.createToken(
+                user,
+                token,
+                TokenType.EMAIL_VERIFICATION);
+
+        // Send the verification link.
+        emailService.sendVerificationEmail(
+                user.getEmail(),
+                token);
     }
 
     @Transactional
