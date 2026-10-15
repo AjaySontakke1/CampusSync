@@ -85,6 +85,31 @@ public class RefreshTokenService {
         return rawToken;
     }
 
+    @Transactional
+    public void revokeRefreshToken(String rawToken) {
+
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Refresh token is required");
+        }
+
+        String tokenHash = hashToken(rawToken);
+
+        RefreshToken refreshToken = refreshTokenRepository
+                .findByTokenHashForUpdate(tokenHash)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Invalid refresh token"));
+
+        if (refreshToken.isRevoked()) {
+            throw new IllegalArgumentException(
+                    "Refresh token has already been revoked");
+        }
+
+        refreshToken.setRevoked(true);
+        refreshTokenRepository.save(refreshToken);
+    }
+
     private String hashToken(String token) {
         try {
             MessageDigest digest =
