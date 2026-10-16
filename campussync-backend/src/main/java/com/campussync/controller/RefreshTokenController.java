@@ -27,14 +27,9 @@ public class RefreshTokenController {
             @Valid @RequestBody RefreshTokenRequest request) {
 
         try {
-            String newAccessToken =
-                    refreshTokenService.refreshAccessToken(
-                            request.getRefreshToken());
-
             RefreshTokenResponse response =
-                    RefreshTokenResponse.builder()
-                            .accessToken(newAccessToken)
-                            .build();
+                    refreshTokenService.rotateRefreshToken(
+                            request.getRefreshToken());
 
             return ResponseEntity.ok(response);
 

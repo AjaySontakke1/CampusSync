@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.campussync.dto.RefreshTokenResponse;
 import com.campussync.entity.RefreshToken;
 import com.campussync.entity.User;
 import com.campussync.repository.RefreshTokenRepository;
@@ -34,31 +35,52 @@ public class RefreshTokenService {
         this.expirationMs = expirationMs;
     }
 
-    @Transactional(readOnly = true)
-    public String refreshAccessToken(String rawToken) {
+    @Transactional
+    public RefreshTokenResponse rotateRefreshToken(String rawToken) {
+
+        if (rawToken == null || rawToken.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Refresh token is required");
+        }
+
         String tokenHash = hashToken(rawToken);
 
-        RefreshToken refreshToken = refreshTokenRepository
-                .findByTokenHash(tokenHash)
+        RefreshToken oldToken = refreshTokenRepository
+                .findByTokenHashForUpdate(tokenHash)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Invalid refresh token"));
+                        new IllegalArgumentException(
+                                "Invalid refresh token"));
 
-        if (refreshToken.isRevoked()) {
-            throw new IllegalArgumentException("Refresh token has been revoked");
+        if (oldToken.isRevoked()) {
+            throw new IllegalArgumentException(
+                    "Refresh token has been revoked");
         }
 
-        if (!refreshToken.getExpiryDate().isAfter(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Refresh token has expired");
+        if (!oldToken.getExpiryDate().isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException(
+                    "Refresh token has expired");
         }
 
-        User user = refreshToken.getUser();
+        User user = oldToken.getUser();
 
         if (!Boolean.TRUE.equals(user.getActive())
                 || !user.isEmailVerified()) {
-            throw new IllegalArgumentException("User is not allowed to log in");
+            throw new IllegalArgumentException(
+                    "User is not allowed to log in");
         }
 
-        return jwtService.generateAccessToken(user);
+        // Revoke the old refresh token.
+        oldToken.setRevoked(true);
+        refreshTokenRepository.save(oldToken);
+
+        // Generate both replacement tokens.
+        String newAccessToken = jwtService.generateAccessToken(user);
+        String newRefreshToken = createRefreshToken(user);
+
+        return RefreshTokenResponse.builder()
+                .accessToken(newAccessToken)
+                .refreshToken(newRefreshToken)
+                .build();
     }
 
     @Transactional
@@ -76,7 +98,7 @@ public class RefreshTokenService {
                 .user(user)
                 .expiryDate(
                         LocalDateTime.now()
-                                .plusNanos(expirationMs * 1_000_000))
+                                .plusNanos(expirationMs * 1_000_000L))
                 .revoked(false)
                 .build();
 
