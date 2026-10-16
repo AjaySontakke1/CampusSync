@@ -62,6 +62,41 @@ public class EmailVerificationService {
     }
 
     @Transactional
+    public void forgotPassword(String email) {
+
+        // Find the account associated with this email
+        var optionalUser = userRepository.findByEmail(email);
+
+        // Always return without revealing whether the account exists
+        if (optionalUser.isEmpty()) {
+            return;
+        }
+
+        var user = optionalUser.get();
+
+        // Do not reset passwords for unverified or inactive accounts
+        if (!user.isEmailVerified()
+                || !Boolean.TRUE.equals(user.getActive())) {
+            return;
+        }
+
+        // Generate and store a password-reset token
+        String token = tokenService.generateToken();
+
+        tokenService.createToken(
+                user,
+                token,
+                TokenType.PASSWORD_RESET
+        );
+
+        // Prepare the reset email
+        emailService.sendPasswordResetEmail(
+                user.getEmail(),
+                token
+        );
+    }
+
+    @Transactional
     public void verifyEmail(String token) {
 
         VerificationToken verificationToken =
