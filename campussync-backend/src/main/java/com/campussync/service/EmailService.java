@@ -28,4 +28,13 @@ public class EmailService {
                 + passwordSetupUrl);
         System.out.println("==================================================");
     }
+
+    public void sendPasswordResetEmail(String toEmail, String token) {
+
+        String resetUrl =
+                "https://campussync.com/reset-password?token=" + token;
+
+        System.out.println("Sending Password Reset Email to: " + toEmail);
+        System.out.println("Password Reset Link: " + resetUrl);
+    }
 }
