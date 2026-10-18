@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.ResetPasswordRequest;
 import com.campussync.dto.SetPasswordRequest;
 import com.campussync.entity.User;
 import com.campussync.entity.VerificationToken;
@@ -184,6 +185,49 @@ public class EmailVerificationService {
         userRepository.save(user);
 
         // Make the token single-use.
+        tokenRepository.delete(verificationToken);
+    }
+
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+
+        // Find the reset token
+        VerificationToken verificationToken =
+                tokenRepository.findByToken(request.getToken())
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Invalid password reset token"));
+
+        // Ensure this token is only for password reset
+        if (verificationToken.getTokenType()
+                != TokenType.PASSWORD_RESET) {
+            throw new IllegalArgumentException(
+                    "Invalid password reset token");
+        }
+
+        // Check whether the token has expired
+        if (!verificationToken.getExpiryDate()
+                .isAfter(LocalDateTime.now())) {
+            throw new IllegalArgumentException(
+                    "Password reset token has expired");
+        }
+
+        User user = verificationToken.getUser();
+
+        // Only verified, active accounts can reset passwords
+        if (!user.isEmailVerified()
+                || !Boolean.TRUE.equals(user.getActive())) {
+            throw new IllegalArgumentException(
+                    "Account is not eligible for password reset");
+        }
+
+        // Save the new password securely
+        user.setPassword(passwordEncoder.encode(
+                request.getNewPassword()));
+
+        userRepository.save(user);
+
+        // A reset token must not be reused
         tokenRepository.delete(verificationToken);
     }
 }
