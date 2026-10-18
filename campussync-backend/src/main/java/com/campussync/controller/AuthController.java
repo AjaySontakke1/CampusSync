@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.ForgotPasswordRequest;
 import com.campussync.dto.ParentRegistrationRequest;
 import com.campussync.dto.ResendVerificationRequest;
 import com.campussync.dto.StudentRegistrationRequest;
@@ -72,6 +73,17 @@ public class AuthController {
             @Valid @RequestBody SetPasswordRequest request) {
         emailVerificationService.setPassword(request);
         return ResponseEntity.ok("Password set successfully");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request) {
+
+        emailVerificationService.forgotPassword(request.getEmail());
+
+        return ResponseEntity.ok(
+                "If an account exists with this email, a password reset link has been sent."
+        );
     }
 
     @PostMapping("/login")
