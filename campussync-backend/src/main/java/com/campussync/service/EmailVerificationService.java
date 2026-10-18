@@ -21,18 +21,21 @@ public class EmailVerificationService {
     private final EmailService emailService;
     private final VerificationTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public EmailVerificationService(
             UserRepository userRepository,
             VerificationTokenService tokenService,
             EmailService emailService,
             VerificationTokenRepository tokenRepository,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Transactional
@@ -221,13 +224,17 @@ public class EmailVerificationService {
                     "Account is not eligible for password reset");
         }
 
-        // Save the new password securely
-        user.setPassword(passwordEncoder.encode(
-                request.getNewPassword()));
+        // 1. Save the new password securely
+        user.setPassword(
+                passwordEncoder.encode(request.getNewPassword())
+        );
 
         userRepository.save(user);
 
-        // A reset token must not be reused
+        // 2. Revoke all active refresh-token sessions
+        refreshTokenService.revokeAllUserRefreshTokens(user);
+
+        // 3. Delete the password-reset token
         tokenRepository.delete(verificationToken);
     }
 }
