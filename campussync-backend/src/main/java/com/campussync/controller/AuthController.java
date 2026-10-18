@@ -3,6 +3,7 @@ package com.campussync.controller;
 import com.campussync.dto.ForgotPasswordRequest;
 import com.campussync.dto.ParentRegistrationRequest;
 import com.campussync.dto.ResendVerificationRequest;
+import com.campussync.dto.ResetPasswordRequest;
 import com.campussync.dto.StudentRegistrationRequest;
 import com.campussync.dto.SetPasswordRequest;
 import com.campussync.dto.LoginRequest;
@@ -83,6 +84,17 @@ public class AuthController {
 
         return ResponseEntity.ok(
                 "If an account exists with this email, a password reset link has been sent."
+        );
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request) {
+
+        emailVerificationService.resetPassword(request);
+
+        return ResponseEntity.ok(
+                "Password reset successfully. Please log in."
         );
     }
 
