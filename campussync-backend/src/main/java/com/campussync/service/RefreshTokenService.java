@@ -6,6 +6,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -130,6 +131,19 @@ public class RefreshTokenService {
 
         refreshToken.setRevoked(true);
         refreshTokenRepository.save(refreshToken);
+    }
+
+    @Transactional
+    public void revokeAllUserRefreshTokens(User user) {
+
+        List<RefreshToken> activeTokens =
+                refreshTokenRepository.findByUserAndRevokedFalse(user);
+
+        for (RefreshToken token : activeTokens) {
+            token.setRevoked(true);
+        }
+
+        refreshTokenRepository.saveAll(activeTokens);
     }
 
     private String hashToken(String token) {
