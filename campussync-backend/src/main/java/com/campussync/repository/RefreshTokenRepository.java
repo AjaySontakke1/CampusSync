@@ -1,6 +1,9 @@
 package com.campussync.repository;
 
+import java.util.List;
 import java.util.Optional;
+
+import com.campussync.entity.User;
 
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,4 +23,6 @@ public interface RefreshTokenRepository
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM RefreshToken r WHERE r.tokenHash = :tokenHash")
     Optional<RefreshToken> findByTokenHashForUpdate(@Param("tokenHash") String tokenHash);
+
+    List<RefreshToken> findByUserAndRevokedFalse(User user);
 }
