@@ -63,6 +63,10 @@ public class TeacherAttendanceService {
             throw new IllegalArgumentException("Academic year is not active");
         }
 
+        if (!subject.isActive()) {
+            throw new IllegalArgumentException("Subject is not active");
+        }
+
         if (request.getAttendanceDate().isBefore(academicYear.getStartDate())
                 || request.getAttendanceDate().isAfter(academicYear.getEndDate())) {
             throw new IllegalArgumentException("Attendance date must be within the academic year");
