@@ -46,7 +46,7 @@ public class TeacherAttendanceService {
     }
 
     @Transactional
-    public void markAttendance(String userEmail, MarkAttendanceRequest request) {
+    public Attendance markAttendance(String userEmail, MarkAttendanceRequest request) {
         Teacher teacher = teacherRepository.findByUserEmail(userEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Teacher profile not found for email: " + userEmail));
 
@@ -115,7 +115,7 @@ public class TeacherAttendanceService {
                 .remarks(request.getRemarks())
                 .build();
 
-        attendanceRepository.save(attendance);
+        return attendanceRepository.save(attendance);
     }
 
     @Transactional(readOnly = true)
