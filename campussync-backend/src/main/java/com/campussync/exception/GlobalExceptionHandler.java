@@ -1,5 +1,6 @@
 package com.campussync.exception;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -39,15 +40,17 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(
-            IllegalArgumentException ex) {
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(
+            IllegalArgumentException exception) {
 
-        return ResponseEntity.badRequest()
-                .body(Map.of(
-                        "message",
-                        ex.getMessage() != null
-                                ? ex.getMessage()
-                                : "Invalid request"));
+        Map<String, Object> body = Map.of(
+                "timestamp", LocalDateTime.now().toString(),
+                "status", HttpStatus.BAD_REQUEST.value(),
+                "error", "Bad Request",
+                "message", exception.getMessage() != null ? exception.getMessage() : "Invalid request"
+        );
+
+        return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(Exception.class)
