@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.entity.Attendance;
 import com.campussync.service.TeacherAttendanceService;
@@ -21,15 +22,25 @@ public class TeacherAttendanceController {
     }
 
     @PostMapping
-    public ResponseEntity<Attendance> markAttendance(
+    public ResponseEntity<AttendanceResponse> markAttendance(
             @Valid @RequestBody MarkAttendanceRequest request,
             Authentication authentication) {
 
         Attendance attendance = attendanceService.markAttendance(
                 authentication.getName(), request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(attendance);
+        AttendanceResponse response = AttendanceResponse.builder()
+                .attendanceId(attendance.getAttendanceId())
+                .studentId(attendance.getStudent().getStudentId())
+                .subjectId(attendance.getSubject().getSubjectId())
+                .teacherId(attendance.getTeacher().getTeacherId())
+                .academicYearId(
+                        attendance.getAcademicYear().getAcademicYearId())
+                .attendanceDate(attendance.getAttendanceDate())
+                .status(attendance.getStatus())
+                .remarks(attendance.getRemarks())
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
