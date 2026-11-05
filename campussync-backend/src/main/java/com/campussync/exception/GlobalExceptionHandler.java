@@ -1,9 +1,6 @@
 package com.campussync.exception;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.campussync.dto.ApiErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -11,89 +8,102 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(
+    public ResponseEntity<ApiErrorResponse> handleNotFound(
             ResourceNotFoundException exception) {
 
-        Map<String, Object> body = Map.of(
-                "status", 404,
-                "error", "Not Found",
-                "message", exception.getMessage()
-        );
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(404)
+                .error("Not Found")
+                .message(exception.getMessage())
+                .build();
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     @ExceptionHandler(DuplicateAttendanceException.class)
-    public ResponseEntity<Map<String, Object>> handleDuplicateAttendance(
+    public ResponseEntity<ApiErrorResponse> handleDuplicate(
             DuplicateAttendanceException exception) {
 
-        Map<String, Object> body = Map.of(
-                "status", 409,
-                "error", "Conflict",
-                "message", exception.getMessage()
-        );
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(409)
+                .error("Conflict")
+                .message(exception.getMessage())
+                .build();
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(body);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadRequest(
+            IllegalArgumentException exception) {
+
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(400)
+                .error("Bad Request")
+                .message(exception.getMessage())
+                .build();
+
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationErrors(
+    public ResponseEntity<ApiErrorResponse> handleValidationErrors(
             MethodArgumentNotValidException exception) {
 
         Map<String, String> errors = new HashMap<>();
 
-        exception.getBindingResult()
-                .getFieldErrors()
+        exception.getBindingResult().getFieldErrors()
                 .forEach(error ->
                         errors.put(error.getField(), error.getDefaultMessage())
                 );
 
-        Map<String, Object> body = Map.of(
-                "status", 400,
-                "error", "Validation Failed",
-                "messages", errors
-        );
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(400)
+                .error("Validation Failed")
+                .message("Please check the submitted fields")
+                .validationErrors(errors)
+                .build();
 
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.badRequest().body(response);
     }
 
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<Map<String, String>> handleResponseStatus(
+    public ResponseEntity<ApiErrorResponse> handleResponseStatus(
             ResponseStatusException ex) {
 
-        return ResponseEntity
-                .status(ex.getStatusCode())
-                .body(Map.of("message", ex.getReason() != null
-                        ? ex.getReason()
-                        : "Request failed"));
-    }
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(ex.getStatusCode().value())
+                .error(ex.getStatusCode().toString())
+                .message(ex.getReason() != null ? ex.getReason() : "Request failed")
+                .build();
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgument(
-            IllegalArgumentException exception) {
-
-        Map<String, Object> body = Map.of(
-                "timestamp", LocalDateTime.now().toString(),
-                "status", HttpStatus.BAD_REQUEST.value(),
-                "error", "Bad Request",
-                "message", exception.getMessage() != null ? exception.getMessage() : "Invalid request"
-        );
-
-        return ResponseEntity.badRequest().body(body);
+        return ResponseEntity.status(ex.getStatusCode()).body(response);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneralException(
+    public ResponseEntity<ApiErrorResponse> handleGeneralException(
             Exception ex) {
 
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(
-                        "message",
-                        "An unexpected error occurred"));
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(500)
+                .error("Internal Server Error")
+                .message("An unexpected error occurred")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
