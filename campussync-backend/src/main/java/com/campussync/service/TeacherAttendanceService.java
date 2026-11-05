@@ -1,6 +1,7 @@
 package com.campussync.service;
 
 import com.campussync.dto.AttendanceRecordDTO;
+import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Attendance;
@@ -121,7 +122,7 @@ public class TeacherAttendanceService {
     }
 
     @Transactional(readOnly = true)
-    public List<Attendance> getAttendanceByDate(
+    public List<AttendanceResponse> getAttendanceByDate(
             String teacherEmail,
             LocalDate attendanceDate) {
 
@@ -129,7 +130,20 @@ public class TeacherAttendanceService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Teacher profile not found"));
 
-        return attendanceRepository.findByTeacherAndAttendanceDate(
-            teacher, attendanceDate);
+        return attendanceRepository
+                .findByTeacherAndAttendanceDate(teacher, attendanceDate)
+                .stream()
+                .map(attendance -> AttendanceResponse.builder()
+                        .attendanceId(attendance.getAttendanceId())
+                        .studentId(attendance.getStudent().getStudentId())
+                        .subjectId(attendance.getSubject().getSubjectId())
+                        .teacherId(attendance.getTeacher().getTeacherId())
+                        .academicYearId(
+                                attendance.getAcademicYear().getAcademicYearId())
+                        .attendanceDate(attendance.getAttendanceDate())
+                        .status(attendance.getStatus())
+                        .remarks(attendance.getRemarks())
+                        .build())
+                .toList();
     }
 }

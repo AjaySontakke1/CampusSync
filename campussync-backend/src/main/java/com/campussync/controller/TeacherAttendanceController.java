@@ -48,11 +48,11 @@ public class TeacherAttendanceController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Attendance>> getAttendanceByDate(
+    public ResponseEntity<List<AttendanceResponse>> getAttendanceByDate(
             @RequestParam LocalDate date,
             Authentication authentication) {
 
-        List<Attendance> attendance =
+        List<AttendanceResponse> attendance =
                 attendanceService.getAttendanceByDate(
                         authentication.getName(), date);
 
