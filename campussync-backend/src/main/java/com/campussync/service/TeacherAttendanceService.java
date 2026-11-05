@@ -121,20 +121,15 @@ public class TeacherAttendanceService {
     }
 
     @Transactional(readOnly = true)
-    public List<AttendanceRecordDTO> getAttendanceByTeacherAndDate(String userEmail, LocalDate attendanceDate) {
-        Teacher teacher = teacherRepository.findByUserEmail(userEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Teacher profile not found for email: " + userEmail));
+    public List<Attendance> getAttendanceByDate(
+            String teacherEmail,
+            LocalDate attendanceDate) {
 
-        List<Attendance> attendances = attendanceRepository.findByTeacherAndAttendanceDate(teacher, attendanceDate);
+        Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Teacher profile not found"));
 
-        return attendances.stream()
-                .map(a -> AttendanceRecordDTO.builder()
-                        .attendanceId(a.getAttendanceId())
-                        .subjectName(a.getSubject().getSubjectName())
-                        .attendanceDate(a.getAttendanceDate())
-                        .status(a.getStatus().name())
-                        .remarks(a.getRemarks())
-                        .build())
-                .collect(Collectors.toList());
+        return attendanceRepository.findByTeacherAndAttendanceDate(
+            teacher, attendanceDate);
     }
 }

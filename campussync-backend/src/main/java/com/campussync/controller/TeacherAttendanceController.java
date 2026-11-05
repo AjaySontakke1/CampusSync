@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/teacher/attendance")
 public class TeacherAttendanceController {
@@ -42,5 +45,17 @@ public class TeacherAttendanceController {
                 .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Attendance>> getAttendanceByDate(
+            @RequestParam LocalDate date,
+            Authentication authentication) {
+
+        List<Attendance> attendance =
+                attendanceService.getAttendanceByDate(
+                        authentication.getName(), date);
+
+        return ResponseEntity.ok(attendance);
     }
 }
