@@ -1,6 +1,7 @@
 package com.campussync.exception;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -40,18 +41,24 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(
-            MethodArgumentNotValidException ex) {
+    public ResponseEntity<Map<String, Object>> handleValidationErrors(
+            MethodArgumentNotValidException exception) {
 
-        String message = ex.getBindingResult()
+        Map<String, String> errors = new HashMap<>();
+
+        exception.getBindingResult()
                 .getFieldErrors()
-                .stream()
-                .findFirst()
-                .map(error -> error.getDefaultMessage())
-                .orElse("Invalid request");
+                .forEach(error ->
+                        errors.put(error.getField(), error.getDefaultMessage())
+                );
 
-        return ResponseEntity.badRequest()
-                .body(Map.of("message", message));
+        Map<String, Object> body = Map.of(
+                "status", 400,
+                "error", "Validation Failed",
+                "messages", errors
+        );
+
+        return ResponseEntity.badRequest().body(body);
     }
 
     @ExceptionHandler(ResponseStatusException.class)
