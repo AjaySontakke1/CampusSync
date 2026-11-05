@@ -7,6 +7,8 @@ import com.campussync.entity.Attendance;
 import com.campussync.entity.Student;
 import com.campussync.entity.Subject;
 import com.campussync.entity.Teacher;
+import com.campussync.exception.DuplicateAttendanceException;
+import com.campussync.exception.ResourceNotFoundException;
 import com.campussync.repository.AcademicYearRepository;
 import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.StudentRepository;
@@ -48,16 +50,16 @@ public class TeacherAttendanceService {
     @Transactional
     public Attendance markAttendance(String userEmail, MarkAttendanceRequest request) {
         Teacher teacher = teacherRepository.findByUserEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Teacher profile not found for email: " + userEmail));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher profile not found for email: " + userEmail));
 
         Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() -> new IllegalArgumentException("Student not found with ID: " + request.getStudentId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found with ID: " + request.getStudentId()));
 
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new IllegalArgumentException("Subject not found with ID: " + request.getSubjectId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found with ID: " + request.getSubjectId()));
 
         AcademicYear academicYear = academicYearRepository.findById(request.getAcademicYearId())
-                .orElseThrow(() -> new IllegalArgumentException("Academic year not found with ID: " + request.getAcademicYearId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Academic year not found with ID: " + request.getAcademicYearId()));
 
         if (!academicYear.isActive()) {
             throw new IllegalArgumentException("Academic year is not active");
@@ -102,7 +104,7 @@ public class TeacherAttendanceService {
                         request.getAttendanceDate());
 
         if (alreadyRecorded) {
-            throw new IllegalArgumentException("Attendance already recorded for this student, subject, and date");
+            throw new DuplicateAttendanceException("Attendance already recorded for this student, subject, and date");
         }
 
         Attendance attendance = Attendance.builder()
@@ -121,7 +123,7 @@ public class TeacherAttendanceService {
     @Transactional(readOnly = true)
     public List<AttendanceRecordDTO> getAttendanceByTeacherAndDate(String userEmail, LocalDate attendanceDate) {
         Teacher teacher = teacherRepository.findByUserEmail(userEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Teacher profile not found for email: " + userEmail));
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher profile not found for email: " + userEmail));
 
         List<Attendance> attendances = attendanceRepository.findByTeacherAndAttendanceDate(teacher, attendanceDate);
 
