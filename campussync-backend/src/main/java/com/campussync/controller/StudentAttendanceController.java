@@ -1,6 +1,7 @@
 package com.campussync.controller;
 
 import com.campussync.dto.AttendanceResponse;
+import com.campussync.dto.StudentSubjectAttendanceResponse;
 import com.campussync.service.StudentAttendanceService;
 
 import org.springframework.http.ResponseEntity;
@@ -29,5 +30,16 @@ public class StudentAttendanceController {
                         authentication.getName());
 
         return ResponseEntity.ok(attendance);
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<StudentSubjectAttendanceResponse>>
+            getSubjectWiseAttendance(Authentication authentication) {
+
+        List<StudentSubjectAttendanceResponse> summary =
+                attendanceService.getSubjectWiseAttendance(
+                        authentication.getName());
+
+        return ResponseEntity.ok(summary);
     }
 }
