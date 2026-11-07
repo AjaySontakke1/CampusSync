@@ -34,11 +34,15 @@ public class StudentAttendanceController {
 
     @GetMapping("/summary")
     public ResponseEntity<List<StudentSubjectAttendanceResponse>>
-            getSubjectWiseAttendance(Authentication authentication) {
+            getSubjectWiseAttendance(
+                    @RequestParam Long academicYearId,
+                    Authentication authentication) {
 
         List<StudentSubjectAttendanceResponse> summary =
                 attendanceService.getSubjectWiseAttendance(
-                        authentication.getName());
+                        authentication.getName(),
+                        academicYearId
+                );
 
         return ResponseEntity.ok(summary);
     }
