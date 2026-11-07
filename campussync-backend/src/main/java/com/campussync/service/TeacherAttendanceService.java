@@ -2,12 +2,14 @@ package com.campussync.service;
 
 import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponse;
+import com.campussync.dto.AttendanceSummaryResponse;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.Student;
 import com.campussync.entity.Subject;
 import com.campussync.entity.Teacher;
+import com.campussync.enums.AttendanceStatus;
 import com.campussync.exception.DuplicateAttendanceException;
 import com.campussync.exception.ResourceNotFoundException;
 import com.campussync.repository.AcademicYearRepository;
@@ -177,5 +179,55 @@ public class TeacherAttendanceService {
                         .remarks(attendance.getRemarks())
                         .build())
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public AttendanceSummaryResponse getAttendanceSummary(
+            String teacherEmail,
+            Long subjectId,
+            LocalDate attendanceDate) {
+
+        // 1. Find logged-in teacher
+        Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Teacher profile not found"));
+
+        // 2. Find subject
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found"));
+
+        // 3. Count total attendance records
+        long total = attendanceRepository
+                .countByTeacherAndSubjectAndAttendanceDate(
+                        teacher, subject, attendanceDate);
+
+        // 4. Count present students
+        long present = attendanceRepository
+                .countByTeacherAndSubjectAndAttendanceDateAndStatus(
+                        teacher, subject, attendanceDate,
+                        AttendanceStatus.PRESENT);
+
+        // 5. Count absent students
+        long absent = attendanceRepository
+                .countByTeacherAndSubjectAndAttendanceDateAndStatus(
+                        teacher, subject, attendanceDate,
+                        AttendanceStatus.ABSENT);
+
+        // 6. Calculate percentage
+        double percentage = total == 0
+                ? 0.0
+                : (present * 100.0) / total;
+
+        // 7. Return summary
+        return AttendanceSummaryResponse.builder()
+                .subjectId(subject.getSubjectId())
+                .subjectName(subject.getSubjectName())
+                .totalStudents(total)
+                .presentStudents(present)
+                .absentStudents(absent)
+                .attendancePercentage(
+                        Math.round(percentage * 100.0) / 100.0)
+                .build();
     }
 }
