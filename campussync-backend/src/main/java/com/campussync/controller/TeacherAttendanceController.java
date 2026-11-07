@@ -3,6 +3,7 @@ package com.campussync.controller;
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.AttendanceSummaryResponse;
 import com.campussync.dto.MarkAttendanceRequest;
+import com.campussync.dto.UpdateAttendanceRequest;
 import com.campussync.entity.Attendance;
 import com.campussync.service.TeacherAttendanceService;
 import jakarta.validation.Valid;
@@ -89,5 +90,31 @@ public class TeacherAttendanceController {
                 );
 
         return ResponseEntity.ok(summary);
+    }
+
+    @PutMapping("/{attendanceId}")
+    public ResponseEntity<AttendanceResponse> updateAttendance(
+            @PathVariable Long attendanceId,
+            @Valid @RequestBody UpdateAttendanceRequest request,
+            Authentication authentication) {
+
+        Attendance attendance = attendanceService.updateAttendance(
+                authentication.getName(),
+                attendanceId,
+                request
+        );
+
+        AttendanceResponse response = AttendanceResponse.builder()
+                .attendanceId(attendance.getAttendanceId())
+                .studentId(attendance.getStudent().getStudentId())
+                .subjectId(attendance.getSubject().getSubjectId())
+                .teacherId(attendance.getTeacher().getTeacherId())
+                .academicYearId(attendance.getAcademicYear().getAcademicYearId())
+                .attendanceDate(attendance.getAttendanceDate())
+                .status(attendance.getStatus())
+                .remarks(attendance.getRemarks())
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 }
