@@ -1,9 +1,9 @@
 package com.campussync.service;
 
-import com.campussync.dto.AttendanceRecordDTO;
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.AttendanceSummaryResponse;
 import com.campussync.dto.MarkAttendanceRequest;
+import com.campussync.dto.UpdateAttendanceRequest;
 import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.Student;
@@ -18,6 +18,7 @@ import com.campussync.repository.StudentRepository;
 import com.campussync.repository.SubjectRepository;
 import com.campussync.repository.TeacherRepository;
 import com.campussync.repository.TeacherSubjectAssignmentRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -229,5 +230,36 @@ public class TeacherAttendanceService {
                 .attendancePercentage(
                         Math.round(percentage * 100.0) / 100.0)
                 .build();
+    }
+
+    @Transactional
+    public Attendance updateAttendance(
+            String teacherEmail,
+            Long attendanceId,
+            UpdateAttendanceRequest request) {
+
+        // 1. Find logged-in teacher
+        Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Teacher profile not found"));
+
+        // 2. Find attendance record
+        Attendance attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Attendance record not found"));
+
+        // 3. Check whether this attendance belongs to logged-in teacher
+        if (!attendance.getTeacher().getTeacherId()
+                .equals(teacher.getTeacherId())) {
+            throw new AccessDeniedException(
+                    "You cannot update another teacher's attendance");
+        }
+
+        // 4. Update status and remarks
+        attendance.setStatus(request.getStatus());
+        attendance.setRemarks(request.getRemarks());
+
+        // 5. Save updated attendance
+        return attendanceRepository.save(attendance);
     }
 }
