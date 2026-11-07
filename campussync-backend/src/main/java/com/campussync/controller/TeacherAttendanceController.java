@@ -58,4 +58,17 @@ public class TeacherAttendanceController {
 
         return ResponseEntity.ok(attendance);
     }
+
+    @GetMapping("/subject/{subjectId}")
+    public ResponseEntity<List<AttendanceResponse>> getAttendanceBySubject(
+            @PathVariable Long subjectId,
+            @RequestParam LocalDate date,
+            Authentication authentication) {
+
+        List<AttendanceResponse> attendance =
+                attendanceService.getAttendanceBySubject(
+                        authentication.getName(), subjectId, date);
+
+        return ResponseEntity.ok(attendance);
+    }
 }

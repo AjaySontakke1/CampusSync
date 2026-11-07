@@ -22,6 +22,11 @@ public interface AttendanceRepository
             Teacher teacher,
             LocalDate attendanceDate);
 
+    List<Attendance> findByTeacherAndSubjectAndAttendanceDate(
+            Teacher teacher,
+            Subject subject,
+            LocalDate attendanceDate);
+
     boolean existsByStudentAndSubjectAndAcademicYearAndAttendanceDate(
             Student student,
             Subject subject,

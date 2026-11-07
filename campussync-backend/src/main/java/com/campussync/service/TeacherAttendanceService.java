@@ -146,4 +146,36 @@ public class TeacherAttendanceService {
                         .build())
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> getAttendanceBySubject(
+            String teacherEmail,
+            Long subjectId,
+            LocalDate attendanceDate) {
+
+        Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Teacher profile not found"));
+
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found"));
+
+        return attendanceRepository
+                .findByTeacherAndSubjectAndAttendanceDate(
+                        teacher, subject, attendanceDate)
+                .stream()
+                .map(attendance -> AttendanceResponse.builder()
+                        .attendanceId(attendance.getAttendanceId())
+                        .studentId(attendance.getStudent().getStudentId())
+                        .subjectId(attendance.getSubject().getSubjectId())
+                        .teacherId(attendance.getTeacher().getTeacherId())
+                        .academicYearId(
+                                attendance.getAcademicYear().getAcademicYearId())
+                        .attendanceDate(attendance.getAttendanceDate())
+                        .status(attendance.getStatus())
+                        .remarks(attendance.getRemarks())
+                        .build())
+                .toList();
+    }
 }
