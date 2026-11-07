@@ -1,8 +1,10 @@
 package com.campussync.service;
 
 import com.campussync.dto.AttendanceResponse;
+import com.campussync.dto.StudentSubjectAttendanceResponse;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.Student;
+import com.campussync.enums.AttendanceStatus;
 import com.campussync.exception.ResourceNotFoundException;
 import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.StudentRepository;
@@ -10,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class StudentAttendanceService {
@@ -55,6 +59,58 @@ public class StudentAttendanceService {
                         .status(attendance.getStatus())
                         .remarks(attendance.getRemarks())
                         .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentSubjectAttendanceResponse> getSubjectWiseAttendance(
+            String studentEmail) {
+
+        // 1. Find logged-in student
+        Student student = getLoggedInStudent(studentEmail);
+
+        // 2. Fetch student's attendance records
+        List<Attendance> attendanceList =
+                attendanceRepository.findByStudent(student);
+
+        // 3. Group attendance records by subject
+        Map<Long, List<Attendance>> subjectGroups =
+                attendanceList.stream()
+                        .collect(Collectors.groupingBy(
+                                attendance -> attendance.getSubject().getSubjectId()
+                        ));
+
+        // 4. Calculate summary for each subject
+        return subjectGroups.values().stream()
+                .map(records -> {
+
+                    Attendance firstRecord = records.get(0);
+
+                    long total = records.size();
+
+                    long present = records.stream()
+                            .filter(a -> a.getStatus() == AttendanceStatus.PRESENT)
+                            .count();
+
+                    long absent = records.stream()
+                            .filter(a -> a.getStatus() == AttendanceStatus.ABSENT)
+                            .count();
+
+                    double percentage = total == 0
+                            ? 0.0
+                            : (present * 100.0) / total;
+
+                    return StudentSubjectAttendanceResponse.builder()
+                            .subjectId(firstRecord.getSubject().getSubjectId())
+                            .subjectName(firstRecord.getSubject().getSubjectName())
+                            .totalClasses(total)
+                            .presentClasses(present)
+                            .absentClasses(absent)
+                            .attendancePercentage(
+                                    Math.round(percentage * 100.0) / 100.0
+                            )
+                            .build();
+                })
                 .toList();
     }
 }
