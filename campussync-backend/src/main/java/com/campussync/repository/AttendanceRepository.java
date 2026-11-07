@@ -5,6 +5,7 @@ import com.campussync.entity.Student;
 import com.campussync.entity.Subject;
 import com.campussync.entity.Teacher;
 import com.campussync.entity.AcademicYear;
+import com.campussync.enums.AttendanceStatus;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -26,6 +27,17 @@ public interface AttendanceRepository
             Teacher teacher,
             Subject subject,
             LocalDate attendanceDate);
+
+    long countByTeacherAndSubjectAndAttendanceDate(
+            Teacher teacher,
+            Subject subject,
+            LocalDate attendanceDate);
+
+    long countByTeacherAndSubjectAndAttendanceDateAndStatus(
+            Teacher teacher,
+            Subject subject,
+            LocalDate attendanceDate,
+            AttendanceStatus status);
 
     boolean existsByStudentAndSubjectAndAcademicYearAndAttendanceDate(
             Student student,
