@@ -1,10 +1,12 @@
 package com.campussync.controller;
 
 import com.campussync.dto.AttendanceResponse;
+import com.campussync.dto.AttendanceSummaryResponse;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.entity.Attendance;
 import com.campussync.service.TeacherAttendanceService;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -70,5 +72,22 @@ public class TeacherAttendanceController {
                         authentication.getName(), subjectId, date);
 
         return ResponseEntity.ok(attendance);
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<AttendanceSummaryResponse> getAttendanceSummary(
+            @RequestParam Long subjectId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date,
+            Authentication authentication) {
+
+        AttendanceSummaryResponse summary =
+                attendanceService.getAttendanceSummary(
+                        authentication.getName(),
+                        subjectId,
+                        date
+                );
+
+        return ResponseEntity.ok(summary);
     }
 }
