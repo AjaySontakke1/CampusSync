@@ -117,4 +117,17 @@ public class TeacherAttendanceController {
 
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/{attendanceId}")
+    public ResponseEntity<Void> deleteAttendance(
+            @PathVariable Long attendanceId,
+            Authentication authentication) {
+
+        attendanceService.deleteAttendance(
+                authentication.getName(),
+                attendanceId
+        );
+
+        return ResponseEntity.noContent().build();
+    }
 }

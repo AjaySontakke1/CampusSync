@@ -262,4 +262,29 @@ public class TeacherAttendanceService {
         // 5. Save updated attendance
         return attendanceRepository.save(attendance);
     }
+
+    @Transactional
+    public void deleteAttendance(String teacherEmail, Long attendanceId) {
+
+        // 1. Find logged-in teacher
+        Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Teacher profile not found"));
+
+        // 2. Find attendance record
+        Attendance attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Attendance record not found"));
+
+        // 3. Verify ownership
+        if (!attendance.getTeacher().getTeacherId()
+                .equals(teacher.getTeacherId())) {
+
+            throw new AccessDeniedException(
+                    "You cannot delete another teacher's attendance");
+        }
+
+        // 4. Delete attendance
+        attendanceRepository.delete(attendance);
+    }
 }
