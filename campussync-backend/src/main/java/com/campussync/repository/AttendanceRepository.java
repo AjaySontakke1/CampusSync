@@ -19,6 +19,10 @@ public interface AttendanceRepository
 
     List<Attendance> findByStudent(Student student);
 
+    List<Attendance> findByStudentAndAcademicYear(
+            Student student,
+            AcademicYear academicYear);
+
     List<Attendance> findByTeacherAndAttendanceDate(
             Teacher teacher,
             LocalDate attendanceDate);

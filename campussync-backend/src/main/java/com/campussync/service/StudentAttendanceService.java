@@ -2,10 +2,12 @@ package com.campussync.service;
 
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.StudentSubjectAttendanceResponse;
+import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Attendance;
 import com.campussync.entity.Student;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.exception.ResourceNotFoundException;
+import com.campussync.repository.AcademicYearRepository;
 import com.campussync.repository.AttendanceRepository;
 import com.campussync.repository.StudentRepository;
 import org.springframework.stereotype.Service;
@@ -20,12 +22,15 @@ public class StudentAttendanceService {
 
     private final StudentRepository studentRepository;
     private final AttendanceRepository attendanceRepository;
+    private final AcademicYearRepository academicYearRepository;
 
     public StudentAttendanceService(
             StudentRepository studentRepository,
-            AttendanceRepository attendanceRepository) {
+            AttendanceRepository attendanceRepository,
+            AcademicYearRepository academicYearRepository) {
         this.studentRepository = studentRepository;
         this.attendanceRepository = attendanceRepository;
+        this.academicYearRepository = academicYearRepository;
     }
 
     @Transactional(readOnly = true)
@@ -64,27 +69,34 @@ public class StudentAttendanceService {
 
     @Transactional(readOnly = true)
     public List<StudentSubjectAttendanceResponse> getSubjectWiseAttendance(
-            String studentEmail) {
+            String studentEmail,
+            Long academicYearId) {
 
         // 1. Find logged-in student
         Student student = getLoggedInStudent(studentEmail);
 
-        // 2. Fetch student's attendance records
-        List<Attendance> attendanceList =
-                attendanceRepository.findByStudent(student);
+        // 2. Find selected academic year
+        AcademicYear academicYear = academicYearRepository.findById(academicYearId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Academic year not found"));
 
-        // 3. Group attendance records by subject
+        // 3. Fetch attendance for selected academic year
+        List<Attendance> attendanceList =
+                attendanceRepository.findByStudentAndAcademicYear(
+                        student, academicYear);
+
+        // 4. Group records by subject
         Map<Long, List<Attendance>> subjectGroups =
                 attendanceList.stream()
                         .collect(Collectors.groupingBy(
-                                attendance -> attendance.getSubject().getSubjectId()
+                                a -> a.getSubject().getSubjectId()
                         ));
 
-        // 4. Calculate summary for each subject
+        // 5. Calculate subject-wise summary
         return subjectGroups.values().stream()
                 .map(records -> {
 
-                    Attendance firstRecord = records.get(0);
+                    Attendance first = records.get(0);
 
                     long total = records.size();
 
@@ -101,8 +113,8 @@ public class StudentAttendanceService {
                             : (present * 100.0) / total;
 
                     return StudentSubjectAttendanceResponse.builder()
-                            .subjectId(firstRecord.getSubject().getSubjectId())
-                            .subjectName(firstRecord.getSubject().getSubjectName())
+                            .subjectId(first.getSubject().getSubjectId())
+                            .subjectName(first.getSubject().getSubjectName())
                             .totalClasses(total)
                             .presentClasses(present)
                             .absentClasses(absent)
