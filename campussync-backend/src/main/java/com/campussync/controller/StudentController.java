@@ -39,18 +39,6 @@ public class StudentController {
         return ResponseEntity.ok(assignments);
     }
 
-    @GetMapping("/attendance")
-    public ResponseEntity<AttendanceResponseDTO> getMyAttendance(
-            Authentication authentication) {
-
-        String email = authentication.getName();
-
-        AttendanceResponseDTO attendance =
-                studentService.getMyAttendance(email);
-
-        return ResponseEntity.ok(attendance);
-    }
-
     @GetMapping("/results")
     public ResponseEntity<List<ExamResultResponseDTO>> getMyExamResults(
             Authentication authentication) {
