@@ -37,6 +37,9 @@ public class Student {
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
 
+    @Column(name = "division", length = 20)
+    private String division;
+
     @Column(name = "admission_year", nullable = false)
     private int admissionYear;
 
