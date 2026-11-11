@@ -3,7 +3,9 @@ package com.campussync.service;
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.AttendanceStudentResponse;
 import com.campussync.dto.AttendanceSummaryResponse;
+import com.campussync.dto.BulkAttendanceRequest;
 import com.campussync.dto.MarkAttendanceRequest;
+import com.campussync.dto.StudentAttendanceRequest;
 import com.campussync.dto.UpdateAttendanceRequest;
 import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Attendance;
@@ -27,7 +29,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
