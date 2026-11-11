@@ -1,6 +1,7 @@
 package com.campussync.controller;
 
 import com.campussync.dto.AttendanceResponse;
+import com.campussync.dto.AttendanceStudentResponse;
 import com.campussync.dto.AttendanceSummaryResponse;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.dto.UpdateAttendanceRequest;
@@ -129,5 +130,19 @@ public class TeacherAttendanceController {
         );
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/assignment/{assignmentId}/students")
+    public ResponseEntity<List<AttendanceStudentResponse>> getStudentsForAttendance(
+            @PathVariable Long assignmentId,
+            Authentication authentication) {
+
+        List<AttendanceStudentResponse> students =
+                attendanceService.getStudentsForAttendance(
+                        authentication.getName(),
+                        assignmentId
+                );
+
+        return ResponseEntity.ok(students);
     }
 }
