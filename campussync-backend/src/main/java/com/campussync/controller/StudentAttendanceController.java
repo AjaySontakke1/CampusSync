@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.AcademicYearResponse;
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.StudentSubjectAttendanceResponse;
 import com.campussync.service.StudentAttendanceService;
@@ -45,5 +46,10 @@ public class StudentAttendanceController {
                 );
 
         return ResponseEntity.ok(summary);
+    }
+
+    @GetMapping("/academic-years")
+    public ResponseEntity<List<AcademicYearResponse>> getAvailableAcademicYears() {
+        return ResponseEntity.ok(attendanceService.getAvailableAcademicYears());
     }
 }
