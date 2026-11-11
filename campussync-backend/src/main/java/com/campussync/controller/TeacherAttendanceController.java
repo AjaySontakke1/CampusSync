@@ -132,9 +132,9 @@ public class TeacherAttendanceController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/assignment/{assignmentId}/students")
+    @GetMapping("/students")
     public ResponseEntity<List<AttendanceStudentResponse>> getStudentsForAttendance(
-            @PathVariable Long assignmentId,
+            @RequestParam Long assignmentId,
             Authentication authentication) {
 
         List<AttendanceStudentResponse> students =
