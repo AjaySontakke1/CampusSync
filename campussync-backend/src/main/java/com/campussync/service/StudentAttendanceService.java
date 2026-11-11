@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.AcademicYearResponse;
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.StudentSubjectAttendanceResponse;
 import com.campussync.entity.AcademicYear;
@@ -123,6 +124,21 @@ public class StudentAttendanceService {
                             )
                             .build();
                 })
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AcademicYearResponse> getAvailableAcademicYears() {
+
+        return academicYearRepository.findAllByOrderByStartDateDesc()
+                .stream()
+                .map(year -> AcademicYearResponse.builder()
+                        .academicYearId(year.getAcademicYearId())
+                        .name(year.getName())
+                        .startDate(year.getStartDate())
+                        .endDate(year.getEndDate())
+                        .active(year.isActive())
+                        .build())
                 .toList();
     }
 }
