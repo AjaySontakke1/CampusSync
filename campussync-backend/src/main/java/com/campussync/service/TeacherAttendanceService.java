@@ -1,19 +1,23 @@
 package com.campussync.service;
 
 import com.campussync.dto.AttendanceResponse;
+import com.campussync.dto.AttendanceStudentResponse;
 import com.campussync.dto.AttendanceSummaryResponse;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.dto.UpdateAttendanceRequest;
 import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Attendance;
+import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.Student;
 import com.campussync.entity.Subject;
 import com.campussync.entity.Teacher;
+import com.campussync.entity.TeacherSubjectAssignment;
 import com.campussync.enums.AttendanceStatus;
 import com.campussync.exception.DuplicateAttendanceException;
 import com.campussync.exception.ResourceNotFoundException;
 import com.campussync.repository.AcademicYearRepository;
 import com.campussync.repository.AttendanceRepository;
+import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.SubjectRepository;
 import com.campussync.repository.TeacherRepository;
@@ -35,6 +39,7 @@ public class TeacherAttendanceService {
     private final AcademicYearRepository academicYearRepository;
     private final AttendanceRepository attendanceRepository;
     private final TeacherSubjectAssignmentRepository assignmentRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
 
     public TeacherAttendanceService(
             TeacherRepository teacherRepository,
@@ -42,13 +47,15 @@ public class TeacherAttendanceService {
             SubjectRepository subjectRepository,
             AcademicYearRepository academicYearRepository,
             AttendanceRepository attendanceRepository,
-            TeacherSubjectAssignmentRepository assignmentRepository) {
+            TeacherSubjectAssignmentRepository assignmentRepository,
+            CourseEnrollmentRepository courseEnrollmentRepository) {
         this.teacherRepository = teacherRepository;
         this.studentRepository = studentRepository;
         this.subjectRepository = subjectRepository;
         this.academicYearRepository = academicYearRepository;
         this.attendanceRepository = attendanceRepository;
         this.assignmentRepository = assignmentRepository;
+        this.courseEnrollmentRepository = courseEnrollmentRepository;
     }
 
     @Transactional
@@ -286,5 +293,48 @@ public class TeacherAttendanceService {
 
         // 4. Delete attendance
         attendanceRepository.delete(attendance);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AttendanceStudentResponse> getStudentsForAttendance(
+            String teacherEmail,
+            Long assignmentId) {
+
+        // 1. Find the logged-in teacher
+        Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Teacher profile not found"));
+
+        // 2. Find the assignment and verify teacher ownership
+        TeacherSubjectAssignment assignment = assignmentRepository
+                .findByAssignmentIdAndTeacher(assignmentId, teacher)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Teacher assignment not found"));
+
+        // 3. Fetch active enrollments for this exact class
+        List<CourseEnrollment> enrollments =
+                courseEnrollmentRepository
+                        .findByCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
+                                assignment.getCourse(),
+                                assignment.getSemester(),
+                                assignment.getAcademicYear(),
+                                assignment.getDivision()
+                        );
+
+        // 4. Convert enrollments into response DTOs
+        return enrollments.stream()
+                .map(enrollment -> {
+                    Student student = enrollment.getStudent();
+
+                    return AttendanceStudentResponse.builder()
+                            .studentId(student.getStudentId())
+                            .rollNumber(student.getRollNumber())
+                            .registrationNumber(student.getRegistrationNumber())
+                            .firstName(student.getUser().getFirstName())
+                            .lastName(student.getUser().getLastName())
+                            .build();
+                })
+                .toList();
     }
 }
