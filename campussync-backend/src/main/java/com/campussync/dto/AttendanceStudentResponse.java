@@ -9,10 +9,8 @@ import lombok.*;
 public class AttendanceStudentResponse {
 
     private Long studentId;
-
-    private String studentName;
-
     private String rollNumber;
-
     private String registrationNumber;
+    private String firstName;
+    private String lastName;
 }
