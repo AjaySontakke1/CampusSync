@@ -350,39 +350,40 @@ public class TeacherAttendanceService {
             String teacherEmail,
             BulkAttendanceRequest request) {
 
-        // 1. Find the logged-in teacher
+        // 1. Find teacher
         Teacher teacher = teacherRepository.findByUserEmail(teacherEmail)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher profile not found"));
+                        new ResourceNotFoundException("Teacher not found"));
 
-        // 2. Find the assignment belonging to this teacher
-        TeacherSubjectAssignment assignment = assignmentRepository
-                .findByAssignmentIdAndTeacher(request.getAssignmentId(), teacher)
+        // 2. Find teacher's assignment
+        TeacherSubjectAssignment assignment =
+                assignmentRepository.findByAssignmentIdAndTeacher(
+                        request.getAssignmentId(), teacher)
                 .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher assignment not found"));
+                        new ResourceNotFoundException("Assignment not found"));
 
-        // 3. Get subject and academic year from the assignment
+        // 3. Get subject and academic year
         Subject subject = assignment.getSubject();
         AcademicYear academicYear = assignment.getAcademicYear();
 
         if (!subject.isActive()) {
-            throw new IllegalArgumentException("Subject is not active");
+            throw new IllegalArgumentException("Subject is inactive");
         }
 
         if (!academicYear.isActive()) {
-            throw new IllegalArgumentException("Academic year is not active");
+            throw new IllegalArgumentException("Academic year is inactive");
         }
 
-        // 4. Validate attendance date
+        // 4. Check attendance date
         LocalDate date = request.getAttendanceDate();
 
         if (date.isBefore(academicYear.getStartDate())
                 || date.isAfter(academicYear.getEndDate())) {
             throw new IllegalArgumentException(
-                    "Attendance date must be within the academic year");
+                    "Attendance date is outside the academic year");
         }
 
-        // 5. Fetch enrolled students for this assignment
+        // 5. Get students enrolled in this class
         List<CourseEnrollment> enrollments =
                 courseEnrollmentRepository
                         .findByCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
@@ -392,20 +393,12 @@ public class TeacherAttendanceService {
                                 assignment.getDivision()
                         );
 
-        // Create a map of eligible students using student ID
-        Map<Long, Student> eligibleStudents = enrollments.stream()
-                .map(CourseEnrollment::getStudent)
-                .collect(Collectors.toMap(
-                        Student::getStudentId,
-                        student -> student,
-                        (existing, duplicate) -> existing
-                ));
-
         List<Attendance> attendanceList = new ArrayList<>();
         Set<Long> processedStudentIds = new HashSet<>();
 
-        // 6. Validate and prepare each attendance record
-        for (StudentAttendanceRequest record : request.getAttendanceRecords()) {
+        // 6. Check every submitted student
+        for (StudentAttendanceRequest record :
+                request.getAttendanceRecords()) {
 
             Long studentId = record.getStudentId();
 
@@ -415,30 +408,33 @@ public class TeacherAttendanceService {
                         "Duplicate student ID in request: " + studentId);
             }
 
-            // Check whether student belongs to this assignment's class
-            Student student = eligibleStudents.get(studentId);
+            Student student = studentRepository.findById(studentId)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException("Student not found"));
 
-            if (student == null) {
+            // Check student belongs to this class
+            boolean enrolled = enrollments.stream()
+                    .anyMatch(e -> e.getStudent().getStudentId()
+                            .equals(student.getStudentId()));
+
+            if (!enrolled) {
                 throw new IllegalArgumentException(
-                        "Student is not enrolled in this class: " + studentId);
+                        "Student is not enrolled in this class");
             }
 
-            // Check whether attendance already exists
-            boolean alreadyRecorded =
+            // Check duplicate attendance
+            boolean exists =
                     attendanceRepository
                             .existsByStudentAndSubjectAndAcademicYearAndAttendanceDate(
-                                    student,
-                                    subject,
-                                    academicYear,
-                                    date
-                            );
+                                    student, subject, academicYear, date);
 
-            if (alreadyRecorded) {
+            if (exists) {
                 throw new DuplicateAttendanceException(
-                        "Attendance already recorded for student ID: " + studentId);
+                        "Attendance already recorded for student ID: "
+                                + student.getStudentId());
             }
 
-            // Prepare attendance entity
+            // Create attendance record
             Attendance attendance = Attendance.builder()
                     .student(student)
                     .subject(subject)
@@ -452,22 +448,21 @@ public class TeacherAttendanceService {
             attendanceList.add(attendance);
         }
 
-        // 7. Save all attendance records together
+        // 7. Save all records
         List<Attendance> savedRecords =
                 attendanceRepository.saveAll(attendanceList);
 
-        // 8. Convert saved entities into response DTOs
+        // 8. Return response
         return savedRecords.stream()
-                .map(attendance -> AttendanceResponse.builder()
-                        .attendanceId(attendance.getAttendanceId())
-                        .studentId(attendance.getStudent().getStudentId())
-                        .subjectId(attendance.getSubject().getSubjectId())
-                        .teacherId(attendance.getTeacher().getTeacherId())
-                        .academicYearId(
-                                attendance.getAcademicYear().getAcademicYearId())
-                        .attendanceDate(attendance.getAttendanceDate())
-                        .status(attendance.getStatus())
-                        .remarks(attendance.getRemarks())
+                .map(a -> AttendanceResponse.builder()
+                        .attendanceId(a.getAttendanceId())
+                        .studentId(a.getStudent().getStudentId())
+                        .subjectId(a.getSubject().getSubjectId())
+                        .teacherId(a.getTeacher().getTeacherId())
+                        .academicYearId(a.getAcademicYear().getAcademicYearId())
+                        .attendanceDate(a.getAttendanceDate())
+                        .status(a.getStatus())
+                        .remarks(a.getRemarks())
                         .build())
                 .toList();
     }
