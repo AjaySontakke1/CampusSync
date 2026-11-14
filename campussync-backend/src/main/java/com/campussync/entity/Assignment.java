@@ -45,11 +45,17 @@ public class Assignment {
     @JoinColumn(name = "academic_year_id", nullable = false)
     private AcademicYear academicYear;
 
+    @Column(name = "division", length = 20)
+    private String division;
+
     @Column(name = "assigned_date", nullable = false)
     private LocalDate assignedDate;
 
     @Column(name = "due_date")
     private LocalDate dueDate;
+
+    @Column(name = "max_marks", nullable = false)
+    private Integer maxMarks;
 
     @Column(name = "attachment_url", length = 500)
     private String attachmentUrl;
