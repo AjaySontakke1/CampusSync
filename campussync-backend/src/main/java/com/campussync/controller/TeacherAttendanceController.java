@@ -3,6 +3,7 @@ package com.campussync.controller;
 import com.campussync.dto.AttendanceResponse;
 import com.campussync.dto.AttendanceStudentResponse;
 import com.campussync.dto.AttendanceSummaryResponse;
+import com.campussync.dto.BulkAttendanceRequest;
 import com.campussync.dto.MarkAttendanceRequest;
 import com.campussync.dto.UpdateAttendanceRequest;
 import com.campussync.entity.Attendance;
@@ -12,6 +13,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -144,5 +146,18 @@ public class TeacherAttendanceController {
                 );
 
         return ResponseEntity.ok(students);
+    }
+
+    @PostMapping("/bulk")
+    public ResponseEntity<List<AttendanceResponse>> markBulkAttendance(
+            @AuthenticationPrincipal String teacherEmail,
+            @Valid @RequestBody BulkAttendanceRequest request) {
+
+        List<AttendanceResponse> response =
+                attendanceService.markBulkAttendance(
+                        teacherEmail, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(response);
     }
 }
