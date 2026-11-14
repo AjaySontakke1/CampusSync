@@ -405,7 +405,7 @@ public class TeacherAttendanceService {
             // Reject duplicate student IDs in the same request
             if (!processedStudentIds.add(studentId)) {
                 throw new IllegalArgumentException(
-                        "Duplicate student ID in request: " + studentId);
+                        "Duplicate student ID: " + studentId);
             }
 
             Student student = studentRepository.findById(studentId)
