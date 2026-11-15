@@ -32,12 +32,17 @@ public class AdminDepartmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // 2. Get All Departments
+    // 2. Combined Search, Filter and Pagination
     @GetMapping
-    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
+    public ResponseEntity<Page<DepartmentResponse>> searchDepartments(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         return ResponseEntity.ok(
-                departmentService.getAllDepartments()
+                departmentService.searchDepartments(
+                        keyword, active, page, size)
         );
     }
 

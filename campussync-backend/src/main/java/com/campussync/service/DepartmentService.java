@@ -103,6 +103,39 @@ public class DepartmentService {
                 .toList();
     }
 
+    // Combined Search, Status Filter and Pagination
+    @Transactional(readOnly = true)
+    public Page<DepartmentResponse> searchDepartments(
+            String keyword,
+            Boolean active,
+            int page,
+            int size) {
+
+        if (page < 0) {
+            throw new IllegalArgumentException(
+                    "Page number cannot be negative");
+        }
+
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException(
+                    "Page size must be between 1 and 100");
+        }
+
+        if (keyword != null && keyword.isBlank()) {
+            keyword = null;
+        }
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("departmentName").ascending()
+        );
+
+        return departmentRepository
+                .searchDepartments(keyword, active, pageable)
+                .map(this::mapToResponse);
+    }
+
     // 3. Get Department By ID
     @Transactional(readOnly = true)
     public DepartmentResponse getDepartmentById(Long id) {
