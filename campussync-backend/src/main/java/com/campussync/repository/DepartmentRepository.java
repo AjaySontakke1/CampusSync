@@ -18,4 +18,9 @@ public interface DepartmentRepository
     boolean existsByDepartmentCode(String departmentCode);
 
     List<Department> findByActive(Boolean active);
+
+    List<Department> findByDepartmentNameContainingIgnoreCaseOrDepartmentCodeContainingIgnoreCase(
+            String departmentName,
+            String departmentCode
+    );
 }

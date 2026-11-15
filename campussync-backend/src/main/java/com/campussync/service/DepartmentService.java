@@ -72,6 +72,18 @@ public class DepartmentService {
                 .toList();
     }
 
+    // Search Departments by Name or Code
+    @Transactional(readOnly = true)
+    public List<DepartmentResponse> searchDepartments(String keyword) {
+
+        return departmentRepository
+                .findByDepartmentNameContainingIgnoreCaseOrDepartmentCodeContainingIgnoreCase(
+                        keyword, keyword)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     // 3. Get Department By ID
     @Transactional(readOnly = true)
     public DepartmentResponse getDepartmentById(Long id) {

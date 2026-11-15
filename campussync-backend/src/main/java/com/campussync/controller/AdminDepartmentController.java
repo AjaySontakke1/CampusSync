@@ -50,6 +50,16 @@ public class AdminDepartmentController {
         );
     }
 
+    // Search Departments by Name or Code
+    @GetMapping("/search")
+    public ResponseEntity<List<DepartmentResponse>> searchDepartments(
+            @RequestParam String keyword) {
+
+        return ResponseEntity.ok(
+                departmentService.searchDepartments(keyword)
+        );
+    }
+
     // 3. Get Department By ID
     @GetMapping("/{id}")
     public ResponseEntity<DepartmentResponse> getDepartmentById(
