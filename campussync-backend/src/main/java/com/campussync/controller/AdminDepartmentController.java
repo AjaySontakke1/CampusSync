@@ -31,13 +31,22 @@ public class AdminDepartmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // 2. Get Departments (Optionally Filter by Active Status)
+    // 2. Get All Departments
     @GetMapping
-    public ResponseEntity<List<DepartmentResponse>> getDepartments(
-            @RequestParam(required = false) Boolean active) {
+    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
 
         return ResponseEntity.ok(
-                departmentService.getDepartments(active)
+                departmentService.getAllDepartments()
+        );
+    }
+
+    // Filter Departments by Status
+    @GetMapping("/filter")
+    public ResponseEntity<List<DepartmentResponse>> getDepartmentsByStatus(
+            @RequestParam Boolean active) {
+
+        return ResponseEntity.ok(
+                departmentService.getDepartmentsByStatus(active)
         );
     }
 

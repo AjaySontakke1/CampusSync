@@ -51,22 +51,25 @@ public class DepartmentService {
         return mapToResponse(savedDepartment);
     }
 
-    // 2. Get Departments (Optionally Filter by Active Status)
+    // 2. Get All Departments
     @Transactional(readOnly = true)
-    public List<DepartmentResponse> getDepartments(Boolean active) {
+    public List<DepartmentResponse> getAllDepartments() {
 
-        List<Department> departments = (active == null)
-                ? departmentRepository.findAll()
-                : departmentRepository.findByActive(active);
-
-        return departments.stream()
+        return departmentRepository.findAll()
+                .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
 
+    // Filter Departments by Status
     @Transactional(readOnly = true)
-    public List<DepartmentResponse> getAllDepartments() {
-        return getDepartments(null);
+    public List<DepartmentResponse> getDepartmentsByStatus(
+            Boolean active) {
+
+        return departmentRepository.findByActive(active)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     // 3. Get Department By ID
