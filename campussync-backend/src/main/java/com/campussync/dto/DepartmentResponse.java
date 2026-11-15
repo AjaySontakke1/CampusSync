@@ -15,4 +15,5 @@ public class DepartmentResponse {
     private String departmentName;
     private String departmentCode;
     private String hodName;
+    private Boolean active;
 }

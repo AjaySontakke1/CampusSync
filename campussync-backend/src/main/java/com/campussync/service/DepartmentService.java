@@ -108,14 +108,21 @@ public class DepartmentService {
         return mapToResponse(updatedDepartment);
     }
 
-    // 5. Delete Department
-    public void deleteDepartment(Long id) {
+    // 5. Deactivate Department (Soft Delete)
+    public void deactivateDepartment(Long id) {
 
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Department not found with ID: " + id));
 
-        departmentRepository.delete(department);
+        if (Boolean.FALSE.equals(department.getActive())) {
+            throw new IllegalArgumentException(
+                    "Department is already inactive");
+        }
+
+        department.setActive(false);
+
+        departmentRepository.save(department);
     }
 
     // Convert Entity into Response DTO
@@ -126,6 +133,7 @@ public class DepartmentService {
                 .departmentName(department.getDepartmentName())
                 .departmentCode(department.getDepartmentCode())
                 .hodName(department.getHodName())
+                .active(department.getActive())
                 .build();
     }
 }

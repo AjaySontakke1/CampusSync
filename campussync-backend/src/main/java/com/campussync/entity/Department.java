@@ -25,4 +25,8 @@ public class Department {
 
     private String hodName;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean active = true;
+
 }

@@ -61,12 +61,12 @@ public class AdminDepartmentController {
         );
     }
 
-    // 5. Delete Department
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteDepartment(
+    // 5. Deactivate Department (Soft Delete)
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateDepartment(
             @PathVariable Long id) {
 
-        departmentService.deleteDepartment(id);
+        departmentService.deactivateDepartment(id);
 
         return ResponseEntity.noContent().build();
     }
