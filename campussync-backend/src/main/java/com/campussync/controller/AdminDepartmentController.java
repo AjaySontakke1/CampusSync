@@ -7,6 +7,7 @@ import com.campussync.service.DepartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -47,6 +48,17 @@ public class AdminDepartmentController {
 
         return ResponseEntity.ok(
                 departmentService.getDepartmentsByStatus(active)
+        );
+    }
+
+    // Paginated Departments
+    @GetMapping("/page")
+    public ResponseEntity<Page<DepartmentResponse>> getDepartmentsPage(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(
+                departmentService.getAllDepartments(page, size)
         );
     }
 

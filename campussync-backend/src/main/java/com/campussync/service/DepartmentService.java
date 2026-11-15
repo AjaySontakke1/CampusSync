@@ -10,6 +10,10 @@ import com.campussync.repository.TeacherRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,6 +63,21 @@ public class DepartmentService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    // Paginated Departments
+    @Transactional(readOnly = true)
+    public Page<DepartmentResponse> getAllDepartments(
+            int page, int size) {
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by("departmentName").ascending()
+        );
+
+        return departmentRepository.findAll(pageable)
+                .map(this::mapToResponse);
     }
 
     // Filter Departments by Status
