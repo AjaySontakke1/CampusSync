@@ -3,7 +3,9 @@ package com.campussync.service;
 import com.campussync.dto.DepartmentRequest;
 import com.campussync.dto.DepartmentResponse;
 import com.campussync.entity.Department;
+import com.campussync.repository.CourseRepository;
 import com.campussync.repository.DepartmentRepository;
+import com.campussync.repository.TeacherRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,8 @@ import java.util.List;
 public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final CourseRepository courseRepository;
+    private final TeacherRepository teacherRepository;
 
     // 1. Create Department
     public DepartmentResponse createDepartment(DepartmentRequest request) {
@@ -47,14 +51,22 @@ public class DepartmentService {
         return mapToResponse(savedDepartment);
     }
 
-    // 2. Get All Departments
+    // 2. Get Departments (Optionally Filter by Active Status)
     @Transactional(readOnly = true)
-    public List<DepartmentResponse> getAllDepartments() {
+    public List<DepartmentResponse> getDepartments(Boolean active) {
 
-        return departmentRepository.findAll()
-                .stream()
+        List<Department> departments = (active == null)
+                ? departmentRepository.findAll()
+                : departmentRepository.findByActive(active);
+
+        return departments.stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DepartmentResponse> getAllDepartments() {
+        return getDepartments(null);
     }
 
     // 3. Get Department By ID
@@ -108,7 +120,7 @@ public class DepartmentService {
         return mapToResponse(updatedDepartment);
     }
 
-    // 5. Deactivate Department (Soft Delete)
+    // 5. Deactivate Department (Soft Delete with Referential Integrity Check)
     public void deactivateDepartment(Long id) {
 
         Department department = departmentRepository.findById(id)
@@ -120,7 +132,35 @@ public class DepartmentService {
                     "Department is already inactive");
         }
 
+        // Integrity check: protect departments with active courses or teachers
+        if (courseRepository.existsByDepartmentAndActiveTrue(department)) {
+            throw new IllegalArgumentException(
+                    "Cannot deactivate department with active courses. Reassign or deactivate courses first.");
+        }
+
+        if (teacherRepository.existsByDepartment(department)) {
+            throw new IllegalArgumentException(
+                    "Cannot deactivate department with assigned teachers. Reassign teachers first.");
+        }
+
         department.setActive(false);
+
+        departmentRepository.save(department);
+    }
+
+    // 6. Reactivate Department
+    public void reactivateDepartment(Long id) {
+
+        Department department = departmentRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Department not found with ID: " + id));
+
+        if (Boolean.TRUE.equals(department.getActive())) {
+            throw new IllegalArgumentException(
+                    "Department is already active");
+        }
+
+        department.setActive(true);
 
         departmentRepository.save(department);
     }

@@ -31,12 +31,13 @@ public class AdminDepartmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    // 2. Get All Departments
+    // 2. Get Departments (Optionally Filter by Active Status)
     @GetMapping
-    public ResponseEntity<List<DepartmentResponse>> getAllDepartments() {
+    public ResponseEntity<List<DepartmentResponse>> getDepartments(
+            @RequestParam(required = false) Boolean active) {
 
         return ResponseEntity.ok(
-                departmentService.getAllDepartments()
+                departmentService.getDepartments(active)
         );
     }
 
@@ -67,6 +68,16 @@ public class AdminDepartmentController {
             @PathVariable Long id) {
 
         departmentService.deactivateDepartment(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // 6. Reactivate Department
+    @PatchMapping("/{id}/reactivate")
+    public ResponseEntity<Void> reactivateDepartment(
+            @PathVariable Long id) {
+
+        departmentService.reactivateDepartment(id);
 
         return ResponseEntity.noContent().build();
     }
