@@ -30,7 +30,8 @@ public class Course {
     private int totalSemesters;
 
     @Column(name = "active", nullable = false)
-    private boolean active;
+    @Builder.Default
+    private boolean active = true;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id", nullable = false)
