@@ -286,37 +286,35 @@ public class DepartmentService {
 
     // 7. Get Department Status Change History (Audit Log)
     @Transactional(readOnly = true)
-    public List<DepartmentStatusHistoryResponse> getDepartmentHistory(Long departmentId) {
+    public List<DepartmentStatusHistoryResponse>
+            getDepartmentStatusHistory(Long departmentId) {
 
+        // Find department
         Department department = departmentRepository.findById(departmentId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Department not found with ID: " + departmentId));
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Department not found with ID: " + departmentId));
 
-        return departmentStatusHistoryRepository
-                .findByDepartmentOrderByChangedAtDesc(department)
-                .stream()
-                .map(this::mapToHistoryResponse)
+        // Get history records
+        List<DepartmentStatusHistory> histories =
+                departmentStatusHistoryRepository
+                        .findByDepartmentOrderByChangedAtDesc(department);
+
+        // Convert entity records into DTOs
+        return histories.stream()
+                .map(history -> DepartmentStatusHistoryResponse.builder()
+                        .historyId(history.getHistoryId())
+                        .previousStatus(history.getPreviousStatus())
+                        .newStatus(history.getNewStatus())
+                        .adminName(
+                                history.getChangedBy().getFirstName()
+                                + " "
+                                + history.getChangedBy().getLastName())
+                        .adminEmail(history.getChangedBy().getEmail())
+                        .reason(history.getReason())
+                        .changedAt(history.getChangedAt())
+                        .build())
                 .toList();
-    }
-
-    private DepartmentStatusHistoryResponse mapToHistoryResponse(DepartmentStatusHistory history) {
-        String adminName = null;
-        if (history.getChangedBy() != null) {
-            adminName = (history.getChangedBy().getFirstName() + " " + history.getChangedBy().getLastName()).trim();
-        }
-
-        return DepartmentStatusHistoryResponse.builder()
-                .historyId(history.getHistoryId())
-                .departmentId(history.getDepartment() != null ? history.getDepartment().getDepartmentId() : null)
-                .departmentName(history.getDepartment() != null ? history.getDepartment().getDepartmentName() : null)
-                .previousStatus(history.getPreviousStatus())
-                .newStatus(history.getNewStatus())
-                .changedByUserId(history.getChangedBy() != null ? history.getChangedBy().getId() : null)
-                .changedByEmail(history.getChangedBy() != null ? history.getChangedBy().getEmail() : null)
-                .changedByName(adminName)
-                .reason(history.getReason())
-                .changedAt(history.getChangedAt())
-                .build();
     }
 
     // Convert Entity into Response DTO

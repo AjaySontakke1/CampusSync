@@ -134,11 +134,11 @@ public class AdminDepartmentController {
 
     // 7. Get Department Status Change History (Audit Log)
     @GetMapping("/{id}/history")
-    public ResponseEntity<List<DepartmentStatusHistoryResponse>> getDepartmentHistory(
-            @PathVariable Long id) {
+    public ResponseEntity<List<DepartmentStatusHistoryResponse>>
+            getDepartmentStatusHistory(@PathVariable Long id) {
 
         return ResponseEntity.ok(
-                departmentService.getDepartmentHistory(id)
+                departmentService.getDepartmentStatusHistory(id)
         );
     }
 }
