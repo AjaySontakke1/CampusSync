@@ -270,10 +270,10 @@ public class DepartmentService {
         DepartmentStatusHistory history =
                 DepartmentStatusHistory.builder()
                         .department(department)
-                        .previousStatus(department.getActive())
+                        .previousStatus(false)
                         .newStatus(true)
                         .changedBy(admin)
-                        .reason(reason != null && !reason.isBlank() ? reason : "Reactivated by admin")
+                        .reason(reason)
                         .build();
 
         departmentStatusHistoryRepository.save(history);

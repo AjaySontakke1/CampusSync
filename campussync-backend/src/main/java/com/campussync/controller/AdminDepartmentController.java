@@ -120,7 +120,7 @@ public class AdminDepartmentController {
     @PatchMapping("/{id}/reactivate")
     public ResponseEntity<Void> reactivateDepartment(
             @PathVariable Long id,
-            @RequestParam(required = false, defaultValue = "Reactivated by admin") String reason,
+            @RequestParam String reason,
             Authentication authentication) {
 
         departmentService.reactivateDepartment(
