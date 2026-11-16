@@ -3,9 +3,13 @@ package com.campussync.service;
 import com.campussync.dto.DepartmentRequest;
 import com.campussync.dto.DepartmentResponse;
 import com.campussync.entity.Department;
+import com.campussync.entity.DepartmentStatusHistory;
+import com.campussync.entity.User;
 import com.campussync.repository.CourseRepository;
 import com.campussync.repository.DepartmentRepository;
+import com.campussync.repository.DepartmentStatusHistoryRepository;
 import com.campussync.repository.TeacherRepository;
+import com.campussync.repository.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +31,8 @@ public class DepartmentService {
     private final DepartmentRepository departmentRepository;
     private final CourseRepository courseRepository;
     private final TeacherRepository teacherRepository;
+    private final UserRepository userRepository;
+    private final DepartmentStatusHistoryRepository departmentStatusHistoryRepository;
 
     // 1. Create Department
     public DepartmentResponse createDepartment(DepartmentRequest request) {
@@ -187,8 +193,12 @@ public class DepartmentService {
         return mapToResponse(updatedDepartment);
     }
 
-    // 5. Deactivate Department (Soft Delete with Referential Integrity Check)
-    public void deactivateDepartment(Long id) {
+    // 5. Deactivate Department (Soft Delete with Referential Integrity Check & Audit Logging)
+    @Transactional
+    public void deactivateDepartment(
+            Long id,
+            String adminEmail,
+            String reason) {
 
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -199,17 +209,36 @@ public class DepartmentService {
                     "Department is already inactive");
         }
 
-        // Integrity check: protect departments with active courses or teachers
+        // Check active courses
         if (courseRepository.existsByDepartmentAndActiveTrue(department)) {
             throw new IllegalArgumentException(
-                    "Cannot deactivate department with active courses. Reassign or deactivate courses first.");
+                    "Cannot deactivate department with active courses");
         }
 
+        // Check assigned teachers
         if (teacherRepository.existsByDepartment(department)) {
             throw new IllegalArgumentException(
-                    "Cannot deactivate department with assigned teachers. Reassign teachers first.");
+                    "Cannot deactivate department with assigned teachers");
         }
 
+        // Find Admin
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Admin user not found"));
+
+        // Save department status history
+        DepartmentStatusHistory history =
+                DepartmentStatusHistory.builder()
+                        .department(department)
+                        .previousStatus(department.getActive())
+                        .newStatus(false)
+                        .changedBy(admin)
+                        .reason(reason)
+                        .build();
+
+        departmentStatusHistoryRepository.save(history);
+
+        // Update department status
         department.setActive(false);
 
         departmentRepository.save(department);

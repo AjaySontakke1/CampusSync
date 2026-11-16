@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -98,12 +99,18 @@ public class AdminDepartmentController {
         );
     }
 
-    // 5. Deactivate Department (Soft Delete)
+    // 5. Deactivate Department (Soft Delete with Audit Log)
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivateDepartment(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam String reason,
+            Authentication authentication) {
 
-        departmentService.deactivateDepartment(id);
+        departmentService.deactivateDepartment(
+                id,
+                authentication.getName(),
+                reason
+        );
 
         return ResponseEntity.noContent().build();
     }
