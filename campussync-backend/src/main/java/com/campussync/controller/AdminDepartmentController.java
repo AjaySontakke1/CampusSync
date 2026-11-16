@@ -2,6 +2,7 @@ package com.campussync.controller;
 
 import com.campussync.dto.DepartmentRequest;
 import com.campussync.dto.DepartmentResponse;
+import com.campussync.dto.DepartmentStatusHistoryResponse;
 import com.campussync.service.DepartmentService;
 
 import jakarta.validation.Valid;
@@ -115,13 +116,29 @@ public class AdminDepartmentController {
         return ResponseEntity.noContent().build();
     }
 
-    // 6. Reactivate Department
+    // 6. Reactivate Department (with Audit Log)
     @PatchMapping("/{id}/reactivate")
     public ResponseEntity<Void> reactivateDepartment(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "Reactivated by admin") String reason,
+            Authentication authentication) {
 
-        departmentService.reactivateDepartment(id);
+        departmentService.reactivateDepartment(
+                id,
+                authentication.getName(),
+                reason
+        );
 
         return ResponseEntity.noContent().build();
+    }
+
+    // 7. Get Department Status Change History (Audit Log)
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<DepartmentStatusHistoryResponse>> getDepartmentHistory(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                departmentService.getDepartmentHistory(id)
+        );
     }
 }

@@ -2,6 +2,7 @@ package com.campussync.service;
 
 import com.campussync.dto.DepartmentRequest;
 import com.campussync.dto.DepartmentResponse;
+import com.campussync.dto.DepartmentStatusHistoryResponse;
 import com.campussync.entity.Department;
 import com.campussync.entity.DepartmentStatusHistory;
 import com.campussync.entity.User;
@@ -244,8 +245,12 @@ public class DepartmentService {
         departmentRepository.save(department);
     }
 
-    // 6. Reactivate Department
-    public void reactivateDepartment(Long id) {
+    // 6. Reactivate Department (with Audit Logging)
+    @Transactional
+    public void reactivateDepartment(
+            Long id,
+            String adminEmail,
+            String reason) {
 
         Department department = departmentRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -256,9 +261,62 @@ public class DepartmentService {
                     "Department is already active");
         }
 
+        // Find Admin
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Admin user not found"));
+
+        // Save department status history
+        DepartmentStatusHistory history =
+                DepartmentStatusHistory.builder()
+                        .department(department)
+                        .previousStatus(department.getActive())
+                        .newStatus(true)
+                        .changedBy(admin)
+                        .reason(reason != null && !reason.isBlank() ? reason : "Reactivated by admin")
+                        .build();
+
+        departmentStatusHistoryRepository.save(history);
+
+        // Update department status
         department.setActive(true);
 
         departmentRepository.save(department);
+    }
+
+    // 7. Get Department Status Change History (Audit Log)
+    @Transactional(readOnly = true)
+    public List<DepartmentStatusHistoryResponse> getDepartmentHistory(Long departmentId) {
+
+        Department department = departmentRepository.findById(departmentId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Department not found with ID: " + departmentId));
+
+        return departmentStatusHistoryRepository
+                .findByDepartmentOrderByChangedAtDesc(department)
+                .stream()
+                .map(this::mapToHistoryResponse)
+                .toList();
+    }
+
+    private DepartmentStatusHistoryResponse mapToHistoryResponse(DepartmentStatusHistory history) {
+        String adminName = null;
+        if (history.getChangedBy() != null) {
+            adminName = (history.getChangedBy().getFirstName() + " " + history.getChangedBy().getLastName()).trim();
+        }
+
+        return DepartmentStatusHistoryResponse.builder()
+                .historyId(history.getHistoryId())
+                .departmentId(history.getDepartment() != null ? history.getDepartment().getDepartmentId() : null)
+                .departmentName(history.getDepartment() != null ? history.getDepartment().getDepartmentName() : null)
+                .previousStatus(history.getPreviousStatus())
+                .newStatus(history.getNewStatus())
+                .changedByUserId(history.getChangedBy() != null ? history.getChangedBy().getId() : null)
+                .changedByEmail(history.getChangedBy() != null ? history.getChangedBy().getEmail() : null)
+                .changedByName(adminName)
+                .reason(history.getReason())
+                .changedAt(history.getChangedAt())
+                .build();
     }
 
     // Convert Entity into Response DTO
