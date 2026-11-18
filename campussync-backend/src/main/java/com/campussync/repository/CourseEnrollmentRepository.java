@@ -24,4 +24,7 @@ public interface CourseEnrollmentRepository
             AcademicYear academicYear,
             String division
     );
+
+    // Check whether a course has active student enrollments
+    boolean existsByCourseAndActiveTrue(Course course);
 }

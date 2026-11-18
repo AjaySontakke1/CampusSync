@@ -4,6 +4,7 @@ import com.campussync.dto.CourseRequest;
 import com.campussync.dto.CourseResponse;
 import com.campussync.entity.Course;
 import com.campussync.entity.Department;
+import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.CourseRepository;
 import com.campussync.repository.DepartmentRepository;
 
@@ -22,6 +23,7 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final DepartmentRepository departmentRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
 
     // 1. Create Course
     public CourseResponse createCourse(CourseRequest request) {
@@ -150,19 +152,32 @@ public class CourseService {
         return mapToResponse(updatedCourse);
     }
 
-    // 5. Deactivate Course (Soft Delete)
+    // 5. Deactivate Course (Soft Delete with Dependency Validation)
     public void deactivateCourse(Long id) {
 
+        // 1. Find course
         Course course = courseRepository.findById(id)
                 .orElseThrow(() ->
                         new EntityNotFoundException(
                                 "Course not found with ID: " + id));
 
+        // 2. Check current status
         if (!course.isActive()) {
             throw new IllegalArgumentException(
                     "Course is already inactive");
         }
 
+        // 3. Check active student enrollments
+        boolean hasActiveEnrollments =
+                courseEnrollmentRepository
+                        .existsByCourseAndActiveTrue(course);
+
+        if (hasActiveEnrollments) {
+            throw new IllegalArgumentException(
+                    "Cannot deactivate course because active student enrollments exist");
+        }
+
+        // 4. Deactivate course
         course.setActive(false);
 
         courseRepository.save(course);
