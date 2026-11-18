@@ -26,10 +26,18 @@ public class CourseService {
     // 1. Create Course
     public CourseResponse createCourse(CourseRequest request) {
 
-        // Check duplicate course code
-        if (courseRepository.existsByCourseCode(
-                request.getCourseCode())) {
+        // Validate course duration and semester consistency
+        validateCourseDuration(
+                request.getDurationYears(),
+                request.getTotalSemesters()
+        );
 
+        // Normalize course code
+        String normalizedCode =
+                request.getCourseCode().trim().toUpperCase();
+
+        // Check duplicate course code
+        if (courseRepository.existsByCourseCode(normalizedCode)) {
             throw new IllegalArgumentException(
                     "Course code already exists");
         }
@@ -50,8 +58,8 @@ public class CourseService {
 
         // Build Course entity
         Course course = Course.builder()
-                .courseName(request.getCourseName())
-                .courseCode(request.getCourseCode())
+                .courseName(request.getCourseName().trim())
+                .courseCode(normalizedCode)
                 .durationYears(request.getDurationYears())
                 .totalSemesters(request.getTotalSemesters())
                 .active(true)
@@ -96,8 +104,18 @@ public class CourseService {
                         new EntityNotFoundException(
                                 "Course not found with ID: " + id));
 
-        // 2. Check whether another course uses this code
-        courseRepository.findByCourseCode(request.getCourseCode())
+        // 2. Validate course duration and semester consistency
+        validateCourseDuration(
+                request.getDurationYears(),
+                request.getTotalSemesters()
+        );
+
+        // 3. Normalize course code
+        String normalizedCode =
+                request.getCourseCode().trim().toUpperCase();
+
+        // 4. Check whether another course uses this code
+        courseRepository.findByCourseCode(normalizedCode)
                 .ifPresent(existingCourse -> {
                     if (!existingCourse.getCourseId().equals(id)) {
                         throw new IllegalArgumentException(
@@ -105,34 +123,34 @@ public class CourseService {
                     }
                 });
 
-        // 3. Find the new department
+        // 5. Find the new department
         Department department = departmentRepository.findById(
                 request.getDepartmentId()
         ).orElseThrow(() ->
                 new EntityNotFoundException(
                         "Department not found"));
 
-        // 4. Check department status
+        // 6. Check department status
         if (!Boolean.TRUE.equals(department.getActive())) {
             throw new IllegalArgumentException(
                     "Cannot assign course to inactive department");
         }
 
-        // 5. Update course details
-        course.setCourseName(request.getCourseName());
-        course.setCourseCode(request.getCourseCode());
+        // 7. Update course details
+        course.setCourseName(request.getCourseName().trim());
+        course.setCourseCode(normalizedCode);
         course.setDurationYears(request.getDurationYears());
         course.setTotalSemesters(request.getTotalSemesters());
         course.setDepartment(department);
 
-        // 6. Save updated course
+        // 8. Save updated course
         Course updatedCourse = courseRepository.save(course);
 
-        // 7. Return response
+        // 9. Return response
         return mapToResponse(updatedCourse);
     }
 
-    // 5. Deactivate Course
+    // 5. Deactivate Course (Soft Delete)
     public void deactivateCourse(Long id) {
 
         Course course = courseRepository.findById(id)
@@ -174,7 +192,18 @@ public class CourseService {
         courseRepository.save(course);
     }
 
-    // 7. Convert Entity into Response DTO
+    // 7. Validate Course Duration and Semester Consistency
+    private void validateCourseDuration(
+            int durationYears,
+            int totalSemesters) {
+
+        if (totalSemesters != durationYears * 2) {
+            throw new IllegalArgumentException(
+                    "Total semesters must be twice the course duration");
+        }
+    }
+
+    // 8. Convert Entity into Response DTO
     private CourseResponse mapToResponse(Course course) {
 
         return CourseResponse.builder()
