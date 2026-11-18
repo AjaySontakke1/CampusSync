@@ -78,7 +78,7 @@ public class SemesterSubjectAssignmentService {
 
     // Get all subject assignments for an offering
     @Transactional(readOnly = true)
-    public List<SemesterSubjectAssignment> getAssignmentsByOffering(
+    public List<SemesterSubjectAssignmentResponse> getAssignmentsByOffering(
             Long offeringId) {
 
         SemesterOffering offering = offeringRepository.findById(offeringId)
@@ -86,12 +86,15 @@ public class SemesterSubjectAssignmentService {
                     new EntityNotFoundException(
                         "Semester offering not found"));
 
-        return assignmentRepository.findBySemesterOffering(offering);
+        return assignmentRepository.findBySemesterOffering(offering)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     // Get only active subject assignments
     @Transactional(readOnly = true)
-    public List<SemesterSubjectAssignment> getActiveAssignments(
+    public List<SemesterSubjectAssignmentResponse> getActiveAssignments(
             Long offeringId) {
 
         SemesterOffering offering = offeringRepository.findById(offeringId)
@@ -100,7 +103,10 @@ public class SemesterSubjectAssignmentService {
                         "Semester offering not found"));
 
         return assignmentRepository
-                .findBySemesterOfferingAndActiveTrue(offering);
+                .findBySemesterOfferingAndActiveTrue(offering)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     // Deactivate a subject assignment
