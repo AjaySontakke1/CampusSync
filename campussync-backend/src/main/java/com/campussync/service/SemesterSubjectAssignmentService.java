@@ -111,22 +111,27 @@ public class SemesterSubjectAssignmentService {
 
     // Deactivate a subject assignment
     @Transactional
-    public void deactivateAssignment(Long assignmentId) {
+    public SemesterSubjectAssignmentResponse deactivateAssignment(
+            Long assignmentId) {
 
+        // 1. Find assignment
         SemesterSubjectAssignment assignment =
                 assignmentRepository.findById(assignmentId)
                         .orElseThrow(() ->
                             new EntityNotFoundException(
                                 "Subject assignment not found"));
 
+        // 2. Check current status
         if (!assignment.isActive()) {
             throw new IllegalArgumentException(
                 "Subject assignment is already inactive");
         }
 
+        // 3. Deactivate assignment
         assignment.setActive(false);
 
-        assignmentRepository.save(assignment);
+        // 4. Convert updated entity into response DTO
+        return mapToResponse(assignment);
     }
 
     private SemesterSubjectAssignmentResponse mapToResponse(
