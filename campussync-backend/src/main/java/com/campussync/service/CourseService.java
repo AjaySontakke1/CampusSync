@@ -87,7 +87,52 @@ public class CourseService {
         return mapToResponse(course);
     }
 
-    // 4. Convert Entity into Response DTO
+    // 4. Update Course
+    public CourseResponse updateCourse(Long id, CourseRequest request) {
+
+        // 1. Find existing course
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Course not found with ID: " + id));
+
+        // 2. Check whether another course uses this code
+        courseRepository.findByCourseCode(request.getCourseCode())
+                .ifPresent(existingCourse -> {
+                    if (!existingCourse.getCourseId().equals(id)) {
+                        throw new IllegalArgumentException(
+                                "Course code already exists");
+                    }
+                });
+
+        // 3. Find the new department
+        Department department = departmentRepository.findById(
+                request.getDepartmentId()
+        ).orElseThrow(() ->
+                new EntityNotFoundException(
+                        "Department not found"));
+
+        // 4. Check department status
+        if (!Boolean.TRUE.equals(department.getActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot assign course to inactive department");
+        }
+
+        // 5. Update course details
+        course.setCourseName(request.getCourseName());
+        course.setCourseCode(request.getCourseCode());
+        course.setDurationYears(request.getDurationYears());
+        course.setTotalSemesters(request.getTotalSemesters());
+        course.setDepartment(department);
+
+        // 6. Save updated course
+        Course updatedCourse = courseRepository.save(course);
+
+        // 7. Return response
+        return mapToResponse(updatedCourse);
+    }
+
+    // 5. Convert Entity into Response DTO
     private CourseResponse mapToResponse(Course course) {
 
         return CourseResponse.builder()
