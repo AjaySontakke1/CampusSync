@@ -52,4 +52,24 @@ public class AdminCourseController {
                 courseService.updateCourse(id, request)
         );
     }
+
+    // 5. Deactivate Course
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivateCourse(
+            @PathVariable Long id) {
+
+        courseService.deactivateCourse(id);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // 6. Reactivate Course
+    @PatchMapping("/{id}/reactivate")
+    public ResponseEntity<Void> reactivateCourse(
+            @PathVariable Long id) {
+
+        courseService.reactivateCourse(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }

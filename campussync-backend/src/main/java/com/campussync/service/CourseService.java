@@ -132,7 +132,49 @@ public class CourseService {
         return mapToResponse(updatedCourse);
     }
 
-    // 5. Convert Entity into Response DTO
+    // 5. Deactivate Course
+    public void deactivateCourse(Long id) {
+
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Course not found with ID: " + id));
+
+        if (!course.isActive()) {
+            throw new IllegalArgumentException(
+                    "Course is already inactive");
+        }
+
+        course.setActive(false);
+
+        courseRepository.save(course);
+    }
+
+    // 6. Reactivate Course
+    public void reactivateCourse(Long id) {
+
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Course not found with ID: " + id));
+
+        if (course.isActive()) {
+            throw new IllegalArgumentException(
+                    "Course is already active");
+        }
+
+        // Check whether its department is active
+        if (!Boolean.TRUE.equals(course.getDepartment().getActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot activate course under an inactive department");
+        }
+
+        course.setActive(true);
+
+        courseRepository.save(course);
+    }
+
+    // 7. Convert Entity into Response DTO
     private CourseResponse mapToResponse(Course course) {
 
         return CourseResponse.builder()
