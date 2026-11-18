@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.response.SemesterSubjectAssignmentResponse;
 import com.campussync.entity.SemesterOffering;
 import com.campussync.entity.SemesterSubjectAssignment;
 import com.campussync.entity.Subject;
@@ -30,7 +31,7 @@ public class SemesterSubjectAssignmentService {
     private final SubjectRepository subjectRepository;
 
     @Transactional
-    public SemesterSubjectAssignment assignSubject(
+    public SemesterSubjectAssignmentResponse assignSubject(
             Long offeringId,
             Long subjectId) {
 
@@ -69,7 +70,10 @@ public class SemesterSubjectAssignmentService {
                         .build();
 
         // 6. Save assignment
-        return assignmentRepository.save(assignment);
+        SemesterSubjectAssignment savedAssignment =
+                assignmentRepository.save(assignment);
+
+        return mapToResponse(savedAssignment);
     }
 
     // Get all subject assignments for an offering
@@ -117,5 +121,19 @@ public class SemesterSubjectAssignmentService {
         assignment.setActive(false);
 
         assignmentRepository.save(assignment);
+    }
+
+    private SemesterSubjectAssignmentResponse mapToResponse(
+            SemesterSubjectAssignment assignment) {
+
+        return SemesterSubjectAssignmentResponse.builder()
+                .assignmentId(assignment.getAssignmentId())
+                .semesterOfferingId(
+                    assignment.getSemesterOffering().getSemesterOfferingId())
+                .subjectId(assignment.getSubject().getSubjectId())
+                .subjectName(assignment.getSubject().getSubjectName())
+                .subjectCode(assignment.getSubject().getSubjectCode())
+                .active(assignment.isActive())
+                .build();
     }
 }
