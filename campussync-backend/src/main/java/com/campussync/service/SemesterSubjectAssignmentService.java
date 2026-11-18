@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class SemesterSubjectAssignmentService {
@@ -68,5 +70,52 @@ public class SemesterSubjectAssignmentService {
 
         // 6. Save assignment
         return assignmentRepository.save(assignment);
+    }
+
+    // Get all subject assignments for an offering
+    @Transactional(readOnly = true)
+    public List<SemesterSubjectAssignment> getAssignmentsByOffering(
+            Long offeringId) {
+
+        SemesterOffering offering = offeringRepository.findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found"));
+
+        return assignmentRepository.findBySemesterOffering(offering);
+    }
+
+    // Get only active subject assignments
+    @Transactional(readOnly = true)
+    public List<SemesterSubjectAssignment> getActiveAssignments(
+            Long offeringId) {
+
+        SemesterOffering offering = offeringRepository.findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found"));
+
+        return assignmentRepository
+                .findBySemesterOfferingAndActiveTrue(offering);
+    }
+
+    // Deactivate a subject assignment
+    @Transactional
+    public void deactivateAssignment(Long assignmentId) {
+
+        SemesterSubjectAssignment assignment =
+                assignmentRepository.findById(assignmentId)
+                        .orElseThrow(() ->
+                            new EntityNotFoundException(
+                                "Subject assignment not found"));
+
+        if (!assignment.isActive()) {
+            throw new IllegalArgumentException(
+                "Subject assignment is already inactive");
+        }
+
+        assignment.setActive(false);
+
+        assignmentRepository.save(assignment);
     }
 }
