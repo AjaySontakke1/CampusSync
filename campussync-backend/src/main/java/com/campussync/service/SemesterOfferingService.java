@@ -20,6 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class SemesterOfferingService {
@@ -83,6 +85,40 @@ public class SemesterOfferingService {
 
         // 8. Convert entity into response DTO
         return mapToResponse(savedOffering);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SemesterOfferingResponse> getAllOfferings() {
+
+        return offeringRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SemesterOfferingResponse> getOfferingsByAcademicYear(
+            Long academicYearId) {
+
+        AcademicYear academicYear = academicYearRepository
+                .findById(academicYearId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException("Academic year not found"));
+
+        return offeringRepository.findByAcademicYear(academicYear)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SemesterOfferingResponse> getOfferingsByStatus(
+            SemesterStatus status) {
+
+        return offeringRepository.findByStatus(status)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     // Convert entity into response DTO
