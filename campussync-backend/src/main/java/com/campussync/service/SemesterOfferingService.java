@@ -1,0 +1,109 @@
+package com.campussync.service;
+
+import com.campussync.dto.request.SemesterOfferingRequest;
+import com.campussync.dto.response.SemesterOfferingResponse;
+
+import com.campussync.entity.Semester;
+import com.campussync.entity.AcademicYear;
+import com.campussync.entity.SemesterOffering;
+
+import com.campussync.enums.SemesterStatus;
+
+import com.campussync.repository.SemesterRepository;
+import com.campussync.repository.AcademicYearRepository;
+import com.campussync.repository.SemesterOfferingRepository;
+
+import jakarta.persistence.EntityNotFoundException;
+
+import lombok.RequiredArgsConstructor;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class SemesterOfferingService {
+
+    private final SemesterRepository semesterRepository;
+
+    private final AcademicYearRepository academicYearRepository;
+
+    private final SemesterOfferingRepository offeringRepository;
+
+    @Transactional
+    public SemesterOfferingResponse createOffering(
+            SemesterOfferingRequest request) {
+
+        // 1. Find semester
+        Semester semester = semesterRepository
+                .findById(request.getSemesterId())
+                .orElseThrow(() ->
+                    new EntityNotFoundException("Semester not found"));
+
+        // 2. Find academic year
+        AcademicYear academicYear = academicYearRepository
+                .findById(request.getAcademicYearId())
+                .orElseThrow(() ->
+                    new EntityNotFoundException("Academic year not found"));
+
+        // 3. Validate dates
+        if (!request.getStartDate().isBefore(request.getEndDate())) {
+            throw new IllegalArgumentException(
+                    "Start date must be before end date");
+        }
+
+        // 4. Check academic year date range
+        if (request.getStartDate().isBefore(academicYear.getStartDate())
+                || request.getEndDate().isAfter(academicYear.getEndDate())) {
+
+            throw new IllegalArgumentException(
+                    "Offering dates must be within the academic year");
+        }
+
+        // 5. Check duplicate offering
+        if (offeringRepository.existsBySemesterAndAcademicYear(
+                semester, academicYear)) {
+
+            throw new IllegalArgumentException(
+                    "Offering already exists for this semester and academic year");
+        }
+
+        // 6. Create offering
+        SemesterOffering offering = SemesterOffering.builder()
+                .semester(semester)
+                .academicYear(academicYear)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
+                .status(SemesterStatus.UPCOMING)
+                .build();
+
+        // 7. Save offering
+        SemesterOffering savedOffering =
+                offeringRepository.save(offering);
+
+        // 8. Convert entity into response DTO
+        return mapToResponse(savedOffering);
+    }
+
+    // Convert entity into response DTO
+    private SemesterOfferingResponse mapToResponse(
+            SemesterOffering offering) {
+
+        return SemesterOfferingResponse.builder()
+                .semesterOfferingId(offering.getSemesterOfferingId())
+
+                .semesterId(offering.getSemester().getSemesterId())
+                .semesterName(offering.getSemester().getSemesterName())
+                .semesterNumber(offering.getSemester().getSemesterNumber())
+
+                .academicYearId(
+                    offering.getAcademicYear().getAcademicYearId())
+                .academicYearName(offering.getAcademicYear().getName())
+
+                .startDate(offering.getStartDate())
+                .endDate(offering.getEndDate())
+
+                .status(offering.getStatus())
+                .build();
+    }
+}
