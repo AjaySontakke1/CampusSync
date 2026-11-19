@@ -42,7 +42,8 @@ public class SemesterOfferingService {
 
     @Transactional
     public SemesterOfferingResponse createOffering(
-            SemesterOfferingRequest request) {
+            SemesterOfferingRequest request,
+            String adminEmail) {
 
         // 1. Find semester
         Semester semester = semesterRepository
@@ -91,7 +92,16 @@ public class SemesterOfferingService {
         SemesterOffering savedOffering =
                 offeringRepository.save(offering);
 
-        // 8. Convert entity into response DTO
+        // 8. Record initial audit history
+        historyService.recordStatusChange(
+                savedOffering,
+                null,
+                SemesterStatus.UPCOMING,
+                adminEmail,
+                "Semester offering created"
+        );
+
+        // 9. Convert entity into response DTO
         return mapToResponse(savedOffering);
     }
 
@@ -193,7 +203,10 @@ public class SemesterOfferingService {
     }
 
     @Transactional
-    public SemesterOfferingResponse completeOffering(Long offeringId) {
+    public SemesterOfferingResponse completeOffering(
+            Long offeringId,
+            String adminEmail,
+            String reason) {
 
         // 1. Find semester offering
         SemesterOffering offering = offeringRepository.findById(offeringId)
@@ -207,6 +220,9 @@ public class SemesterOfferingService {
                 "Only active semester offerings can be completed");
         }
 
+        // Store previous status
+        SemesterStatus previousStatus = offering.getStatus();
+
         // 3. Find all active student enrollments
         List<CourseEnrollment> enrollments =
                 courseEnrollmentRepository
@@ -219,8 +235,18 @@ public class SemesterOfferingService {
 
         // 5. Complete the semester offering
         offering.setStatus(SemesterStatus.COMPLETED);
+        offeringRepository.save(offering);
 
-        // 6. Return response
+        // 6. Record audit history
+        historyService.recordStatusChange(
+                offering,
+                previousStatus,
+                SemesterStatus.COMPLETED,
+                adminEmail,
+                reason
+        );
+
+        // 7. Return response
         return mapToResponse(offering);
     }
 
@@ -266,7 +292,10 @@ public class SemesterOfferingService {
     }
 
     @Transactional
-    public SemesterOfferingResponse cancelOffering(Long offeringId) {
+    public SemesterOfferingResponse cancelOffering(
+            Long offeringId,
+            String adminEmail,
+            String reason) {
 
         // 1. Find offering
         SemesterOffering offering = offeringRepository.findById(offeringId)
@@ -280,10 +309,22 @@ public class SemesterOfferingService {
                 "Only upcoming offerings can be cancelled");
         }
 
+        SemesterStatus previousStatus = offering.getStatus();
+
         // 3. Change status
         offering.setStatus(SemesterStatus.CANCELLED);
+        offeringRepository.save(offering);
 
-        // 4. Return updated response
+        // 4. Record audit history
+        historyService.recordStatusChange(
+                offering,
+                previousStatus,
+                SemesterStatus.CANCELLED,
+                adminEmail,
+                reason
+        );
+
+        // 5. Return updated response
         return mapToResponse(offering);
     }
 

@@ -26,9 +26,13 @@ public class AdminSemesterOfferingController {
     // 1. Create a semester offering
     @PostMapping
     public ResponseEntity<SemesterOfferingResponse> createOffering(
-            @Valid @RequestBody SemesterOfferingRequest request) {
+            @Valid @RequestBody SemesterOfferingRequest request,
+            Authentication authentication) {
 
-        SemesterOfferingResponse response = offeringService.createOffering(request);
+        SemesterOfferingResponse response = offeringService.createOffering(
+                request,
+                authentication.getName()
+        );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -94,18 +98,32 @@ public class AdminSemesterOfferingController {
     // 6. Complete a semester offering and close active enrollments
     @PatchMapping("/{offeringId}/complete")
     public ResponseEntity<SemesterOfferingResponse> completeOffering(
-            @PathVariable Long offeringId) {
+            @PathVariable Long offeringId,
+            @RequestParam(required = false, defaultValue = "Semester completed") String reason,
+            Authentication authentication) {
 
-        return ResponseEntity.ok(offeringService.completeOffering(offeringId));
+        return ResponseEntity.ok(
+                offeringService.completeOffering(
+                        offeringId,
+                        authentication.getName(),
+                        reason
+                )
+        );
     }
 
     // 7. Cancel an upcoming semester offering
     @PatchMapping("/{offeringId}/cancel")
     public ResponseEntity<SemesterOfferingResponse> cancelOffering(
-            @PathVariable Long offeringId) {
+            @PathVariable Long offeringId,
+            @RequestParam(required = false, defaultValue = "Semester cancelled") String reason,
+            Authentication authentication) {
 
         return ResponseEntity.ok(
-                offeringService.cancelOffering(offeringId)
+                offeringService.cancelOffering(
+                        offeringId,
+                        authentication.getName(),
+                        reason
+                )
         );
     }
 }
