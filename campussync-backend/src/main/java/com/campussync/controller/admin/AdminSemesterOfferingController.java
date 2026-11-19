@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -74,12 +75,20 @@ public class AdminSemesterOfferingController {
         return ResponseEntity.ok(offeringService.getOfferingsByStatus(status));
     }
 
-    // 5. Activate a semester offering
+    // 5. Activate a semester offering (with Audit History)
     @PatchMapping("/{offeringId}/activate")
     public ResponseEntity<SemesterOfferingResponse> activateOffering(
-            @PathVariable Long offeringId) {
+            @PathVariable Long offeringId,
+            @RequestParam(required = false, defaultValue = "Semester activated") String reason,
+            Authentication authentication) {
 
-        return ResponseEntity.ok(offeringService.activateOffering(offeringId));
+        return ResponseEntity.ok(
+                offeringService.activateOffering(
+                        offeringId,
+                        authentication.getName(),
+                        reason
+                )
+        );
     }
 
     // 6. Complete a semester offering and close active enrollments

@@ -38,6 +38,8 @@ public class SemesterOfferingService {
 
     private final CourseEnrollmentRepository courseEnrollmentRepository;
 
+    private final SemesterOfferingStatusHistoryService historyService;
+
     @Transactional
     public SemesterOfferingResponse createOffering(
             SemesterOfferingRequest request) {
@@ -141,7 +143,10 @@ public class SemesterOfferingService {
     }
 
     @Transactional
-    public SemesterOfferingResponse activateOffering(Long offeringId) {
+    public SemesterOfferingResponse activateOffering(
+            Long offeringId,
+            String adminEmail,
+            String reason) {
 
         // 1. Find offering
         SemesterOffering offering = offeringRepository.findById(offeringId)
@@ -168,10 +173,22 @@ public class SemesterOfferingService {
                 "Semester end date has already passed");
         }
 
+        SemesterStatus previousStatus = offering.getStatus();
+
         // 4. Activate offering
         offering.setStatus(SemesterStatus.ACTIVE);
+        offeringRepository.save(offering);
 
-        // 5. Return response DTO
+        // 5. Record status history
+        historyService.recordStatusChange(
+                offering,
+                previousStatus,
+                offering.getStatus(),
+                adminEmail,
+                reason
+        );
+
+        // 6. Return response DTO
         return mapToResponse(offering);
     }
 
