@@ -1,6 +1,7 @@
 package com.campussync.service;
 
 import com.campussync.dto.request.SemesterOfferingRequest;
+import com.campussync.dto.request.SemesterOfferingUpdateRequest;
 import com.campussync.dto.response.SemesterOfferingResponse;
 
 import com.campussync.entity.CourseEnrollment;
@@ -203,6 +204,47 @@ public class SemesterOfferingService {
         offering.setStatus(SemesterStatus.COMPLETED);
 
         // 6. Return response
+        return mapToResponse(offering);
+    }
+
+    @Transactional
+    public SemesterOfferingResponse updateOffering(
+            Long offeringId,
+            SemesterOfferingUpdateRequest request) {
+
+        // 1. Find offering
+        SemesterOffering offering = offeringRepository.findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found"));
+
+        // 2. Only upcoming offerings can be updated
+        if (offering.getStatus() != SemesterStatus.UPCOMING) {
+            throw new IllegalArgumentException(
+                "Only upcoming offerings can be updated");
+        }
+
+        // 3. Validate dates
+        if (!request.getStartDate().isBefore(request.getEndDate())) {
+            throw new IllegalArgumentException(
+                "Start date must be before end date");
+        }
+
+        // 4. Validate academic year date range
+        AcademicYear academicYear = offering.getAcademicYear();
+
+        if (request.getStartDate().isBefore(academicYear.getStartDate())
+                || request.getEndDate().isAfter(academicYear.getEndDate())) {
+
+            throw new IllegalArgumentException(
+                "Offering dates must be within the academic year");
+        }
+
+        // 5. Update dates
+        offering.setStartDate(request.getStartDate());
+        offering.setEndDate(request.getEndDate());
+
+        // 6. Return updated response
         return mapToResponse(offering);
     }
 

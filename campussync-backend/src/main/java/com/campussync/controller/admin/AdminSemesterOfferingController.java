@@ -1,6 +1,7 @@
 package com.campussync.controller.admin;
 
 import com.campussync.dto.request.SemesterOfferingRequest;
+import com.campussync.dto.request.SemesterOfferingUpdateRequest;
 import com.campussync.dto.response.SemesterOfferingResponse;
 import com.campussync.enums.SemesterStatus;
 import com.campussync.service.SemesterOfferingService;
@@ -43,6 +44,17 @@ public class AdminSemesterOfferingController {
 
         return ResponseEntity.ok(
                 offeringService.getOfferingById(offeringId)
+        );
+    }
+
+    // 2.2 Update semester offering dates
+    @PutMapping("/{offeringId}")
+    public ResponseEntity<SemesterOfferingResponse> updateOffering(
+            @PathVariable Long offeringId,
+            @Valid @RequestBody SemesterOfferingUpdateRequest request) {
+
+        return ResponseEntity.ok(
+                offeringService.updateOffering(offeringId, request)
         );
     }
 
