@@ -4,6 +4,7 @@ import com.campussync.entity.AcademicYear;
 import com.campussync.entity.Course;
 import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.Semester;
+import com.campussync.entity.SemesterOffering;
 import com.campussync.entity.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -27,4 +28,19 @@ public interface CourseEnrollmentRepository
 
     // Check whether a course has active student enrollments
     boolean existsByCourseAndActiveTrue(Course course);
+
+    // Find all enrollments belonging to an offering
+    List<CourseEnrollment> findBySemesterOffering(
+            SemesterOffering semesterOffering
+    );
+
+    // Find only active enrollments belonging to an offering
+    List<CourseEnrollment> findBySemesterOfferingAndActiveTrue(
+            SemesterOffering semesterOffering
+    );
+
+    // Check whether active enrollments exist
+    boolean existsBySemesterOfferingAndActiveTrue(
+            SemesterOffering semesterOffering
+    );
 }
