@@ -248,6 +248,28 @@ public class SemesterOfferingService {
         return mapToResponse(offering);
     }
 
+    @Transactional
+    public SemesterOfferingResponse cancelOffering(Long offeringId) {
+
+        // 1. Find offering
+        SemesterOffering offering = offeringRepository.findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found"));
+
+        // 2. Only upcoming offerings can be cancelled
+        if (offering.getStatus() != SemesterStatus.UPCOMING) {
+            throw new IllegalArgumentException(
+                "Only upcoming offerings can be cancelled");
+        }
+
+        // 3. Change status
+        offering.setStatus(SemesterStatus.CANCELLED);
+
+        // 4. Return updated response
+        return mapToResponse(offering);
+    }
+
     // Convert entity into response DTO
     private SemesterOfferingResponse mapToResponse(
             SemesterOffering offering) {

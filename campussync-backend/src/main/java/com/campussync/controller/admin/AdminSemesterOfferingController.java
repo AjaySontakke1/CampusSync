@@ -89,4 +89,14 @@ public class AdminSemesterOfferingController {
 
         return ResponseEntity.ok(offeringService.completeOffering(offeringId));
     }
+
+    // 7. Cancel an upcoming semester offering
+    @PatchMapping("/{offeringId}/cancel")
+    public ResponseEntity<SemesterOfferingResponse> cancelOffering(
+            @PathVariable Long offeringId) {
+
+        return ResponseEntity.ok(
+                offeringService.cancelOffering(offeringId)
+        );
+    }
 }
