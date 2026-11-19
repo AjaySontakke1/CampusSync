@@ -41,10 +41,10 @@ public class SemesterSubjectAssignmentService {
                     new EntityNotFoundException(
                         "Semester offering not found"));
 
-        // 2. Check offering status
-        if (offering.getStatus() != SemesterStatus.ACTIVE) {
+        // 2. Check offering status (allow subject planning for UPCOMING or ACTIVE offerings)
+        if (offering.getStatus() != SemesterStatus.ACTIVE && offering.getStatus() != SemesterStatus.UPCOMING) {
             throw new IllegalArgumentException(
-                "Subjects can only be assigned to active offerings");
+                "Subjects can only be assigned to UPCOMING or ACTIVE offerings");
         }
 
         // 3. Find subject
@@ -52,6 +52,13 @@ public class SemesterSubjectAssignmentService {
                 .orElseThrow(() ->
                     new EntityNotFoundException(
                         "Subject not found"));
+
+        // Verify subject belongs to the same semester as the offering
+        if (subject.getSemester() != null && offering.getSemester() != null
+                && !subject.getSemester().getSemesterId().equals(offering.getSemester().getSemesterId())) {
+            throw new IllegalArgumentException(
+                "Subject does not belong to the semester of this offering");
+        }
 
         // 4. Check duplicate assignment
         if (assignmentRepository
