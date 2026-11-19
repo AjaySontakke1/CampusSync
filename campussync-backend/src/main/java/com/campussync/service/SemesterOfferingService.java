@@ -102,6 +102,19 @@ public class SemesterOfferingService {
     }
 
     @Transactional(readOnly = true)
+    public SemesterOfferingResponse getOfferingById(Long offeringId) {
+
+        SemesterOffering offering = offeringRepository
+                .findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found with ID: " + offeringId
+                    ));
+
+        return mapToResponse(offering);
+    }
+
+    @Transactional(readOnly = true)
     public List<SemesterOfferingResponse> getOfferingsByAcademicYear(
             Long academicYearId) {
 

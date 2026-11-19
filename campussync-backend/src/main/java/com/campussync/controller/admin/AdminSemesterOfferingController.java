@@ -36,6 +36,16 @@ public class AdminSemesterOfferingController {
         return ResponseEntity.ok(offeringService.getAllOfferings());
     }
 
+    // 2.1 Get semester offering by ID
+    @GetMapping("/{offeringId}")
+    public ResponseEntity<SemesterOfferingResponse> getOfferingById(
+            @PathVariable Long offeringId) {
+
+        return ResponseEntity.ok(
+                offeringService.getOfferingById(offeringId)
+        );
+    }
+
     // 3. Get semester offerings by academic year
     @GetMapping("/academic-year/{academicYearId}")
     public ResponseEntity<List<SemesterOfferingResponse>> getOfferingsByAcademicYear(
