@@ -3,12 +3,14 @@ package com.campussync.service;
 import com.campussync.dto.request.SemesterOfferingRequest;
 import com.campussync.dto.response.SemesterOfferingResponse;
 
+import com.campussync.entity.CourseEnrollment;
 import com.campussync.entity.Semester;
 import com.campussync.entity.AcademicYear;
 import com.campussync.entity.SemesterOffering;
 
 import com.campussync.enums.SemesterStatus;
 
+import com.campussync.repository.CourseEnrollmentRepository;
 import com.campussync.repository.SemesterRepository;
 import com.campussync.repository.AcademicYearRepository;
 import com.campussync.repository.SemesterOfferingRepository;
@@ -32,6 +34,8 @@ public class SemesterOfferingService {
     private final AcademicYearRepository academicYearRepository;
 
     private final SemesterOfferingRepository offeringRepository;
+
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
 
     @Transactional
     public SemesterOfferingResponse createOffering(
@@ -154,6 +158,38 @@ public class SemesterOfferingService {
         offering.setStatus(SemesterStatus.ACTIVE);
 
         // 5. Return response DTO
+        return mapToResponse(offering);
+    }
+
+    @Transactional
+    public SemesterOfferingResponse completeOffering(Long offeringId) {
+
+        // 1. Find semester offering
+        SemesterOffering offering = offeringRepository.findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found"));
+
+        // 2. Check current status
+        if (offering.getStatus() != SemesterStatus.ACTIVE) {
+            throw new IllegalArgumentException(
+                "Only active semester offerings can be completed");
+        }
+
+        // 3. Find all active student enrollments
+        List<CourseEnrollment> enrollments =
+                courseEnrollmentRepository
+                    .findBySemesterOfferingAndActiveTrue(offering);
+
+        // 4. Deactivate all enrollments
+        for (CourseEnrollment enrollment : enrollments) {
+            enrollment.setActive(false);
+        }
+
+        // 5. Complete the semester offering
+        offering.setStatus(SemesterStatus.COMPLETED);
+
+        // 6. Return response
         return mapToResponse(offering);
     }
 
