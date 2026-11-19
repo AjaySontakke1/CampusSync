@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.response.SemesterOfferingStatusHistoryResponse;
 import com.campussync.entity.SemesterOffering;
 import com.campussync.entity.SemesterOfferingStatusHistory;
 import com.campussync.entity.User;
@@ -10,6 +11,8 @@ import com.campussync.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -45,5 +48,25 @@ public class SemesterOfferingStatusHistoryService {
 
         // Save history in database
         historyRepository.save(history);
+    }
+
+    @Transactional(readOnly = true)
+    public List<SemesterOfferingStatusHistoryResponse> getHistory(
+            SemesterOffering offering
+    ) {
+        return historyRepository
+                .findBySemesterOfferingOrderByChangedAtDesc(offering)
+                .stream()
+                .map(history -> SemesterOfferingStatusHistoryResponse.builder()
+                        .historyId(history.getHistoryId())
+                        .previousStatus(history.getPreviousStatus())
+                        .newStatus(history.getNewStatus())
+                        .changedBy(
+                                history.getChangedBy().getEmail()
+                        )
+                        .reason(history.getReason())
+                        .changedAt(history.getChangedAt())
+                        .build())
+                .toList();
     }
 }
