@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -119,6 +120,41 @@ public class SemesterOfferingService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional
+    public SemesterOfferingResponse activateOffering(Long offeringId) {
+
+        // 1. Find offering
+        SemesterOffering offering = offeringRepository.findById(offeringId)
+                .orElseThrow(() ->
+                    new EntityNotFoundException(
+                        "Semester offering not found"));
+
+        // 2. Check current status
+        if (offering.getStatus() != SemesterStatus.UPCOMING) {
+            throw new IllegalArgumentException(
+                "Only upcoming offerings can be activated");
+        }
+
+        // 3. Check semester dates
+        LocalDate today = LocalDate.now();
+
+        if (today.isBefore(offering.getStartDate())) {
+            throw new IllegalArgumentException(
+                "Semester cannot be activated before its start date");
+        }
+
+        if (today.isAfter(offering.getEndDate())) {
+            throw new IllegalArgumentException(
+                "Semester end date has already passed");
+        }
+
+        // 4. Activate offering
+        offering.setStatus(SemesterStatus.ACTIVE);
+
+        // 5. Return response DTO
+        return mapToResponse(offering);
     }
 
     // Convert entity into response DTO

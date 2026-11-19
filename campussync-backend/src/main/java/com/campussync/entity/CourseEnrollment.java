@@ -35,6 +35,10 @@ public class CourseEnrollment {
     @JoinColumn(name = "academic_year_id", nullable = false)
     private AcademicYear academicYear;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "semester_offering_id")
+    private SemesterOffering semesterOffering;
+
     @Column(name = "division", length = 50)
     private String division;
 
