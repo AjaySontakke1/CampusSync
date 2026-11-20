@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.response.TeacherSubjectAssignmentHistoryResponse;
 import com.campussync.entity.*;
 import com.campussync.enums.AssignmentHistoryAction;
 import com.campussync.repository.*;
@@ -58,7 +59,7 @@ public class TeacherSubjectAssignmentHistoryService {
 
     // GET HISTORY BY ASSIGNMENT
     @Transactional(readOnly = true)
-    public List<TeacherSubjectAssignmentHistory> getHistory(
+    public List<TeacherSubjectAssignmentHistoryResponse> getHistory(
             Long assignmentId) {
 
         TeacherSubjectAssignment assignment =
@@ -68,6 +69,29 @@ public class TeacherSubjectAssignmentHistoryService {
                                         "Assignment not found"));
 
         return historyRepository
-                .findByAssignmentOrderByChangedAtDesc(assignment);
+                .findByAssignmentOrderByChangedAtDesc(assignment)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // Convert Entity into Response DTO
+    private TeacherSubjectAssignmentHistoryResponse mapToResponse(
+            TeacherSubjectAssignmentHistory history) {
+
+        User admin = history.getChangedBy();
+
+        return TeacherSubjectAssignmentHistoryResponse.builder()
+                .historyId(history.getHistoryId())
+                .assignmentId(
+                        history.getAssignment().getAssignmentId())
+                .action(history.getAction())
+                .changedById(admin.getId())
+                .changedByName(
+                        admin.getFirstName() + " " + admin.getLastName())
+                .details(history.getDetails())
+                .reason(history.getReason())
+                .changedAt(history.getChangedAt())
+                .build();
     }
 }
