@@ -5,7 +5,6 @@ import com.campussync.dto.response.SemesterSubjectAssignmentResponse;
 import com.campussync.service.SemesterSubjectAssignmentService;
 
 import jakarta.validation.Valid;
-
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
@@ -21,17 +20,23 @@ public class AdminSemesterSubjectController {
 
     private final SemesterSubjectAssignmentService assignmentService;
 
-    // 1. Assign subject
+    // 1. Assign subject to semester offering
     @PostMapping
     public ResponseEntity<SemesterSubjectAssignmentResponse> assignSubject(
             @PathVariable Long offeringId,
             @Valid @RequestBody SemesterSubjectAssignmentRequest request) {
 
+        // Ensure the request offering matches the URL offering if provided
+        if (request.getSemesterOfferingId() != null && !offeringId.equals(request.getSemesterOfferingId())) {
+            throw new IllegalArgumentException(
+                    "Offering ID in URL and request body must match"
+            );
+        }
+
+        request.setSemesterOfferingId(offeringId);
+
         SemesterSubjectAssignmentResponse response =
-                assignmentService.assignSubject(
-                        offeringId,
-                        request.getSubjectId()
-                );
+                assignmentService.assignSubject(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -39,41 +44,34 @@ public class AdminSemesterSubjectController {
     // 2. Get all subject assignments
     @GetMapping
     public ResponseEntity<List<SemesterSubjectAssignmentResponse>>
-            getAllAssignments(@PathVariable Long offeringId) {
+    getAssignments(@PathVariable Long offeringId) {
 
-        List<SemesterSubjectAssignmentResponse> response =
-                assignmentService.getAssignmentsByOffering(offeringId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                assignmentService.getAssignmentsByOffering(offeringId)
+        );
     }
 
-    // 3. Get active subject assignments
+    // 3. Get only active subject assignments
     @GetMapping("/active")
     public ResponseEntity<List<SemesterSubjectAssignmentResponse>>
-            getActiveAssignments(@PathVariable Long offeringId) {
+    getActiveAssignments(@PathVariable Long offeringId) {
 
-        List<SemesterSubjectAssignmentResponse> response =
-                assignmentService.getActiveAssignments(offeringId);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                assignmentService.getActiveAssignments(offeringId)
+        );
     }
 
     // 4. Deactivate subject assignment
     @PatchMapping("/{assignmentId}/deactivate")
-    public ResponseEntity<SemesterSubjectAssignmentResponse>
-            deactivateAssignment(
-                    @PathVariable Long offeringId,
-                    @PathVariable Long assignmentId) {
+    public ResponseEntity<Void> deactivateAssignment(
+            @PathVariable Long offeringId,
+            @PathVariable Long assignmentId) {
 
-        SemesterSubjectAssignmentResponse response =
-                assignmentService.deactivateAssignment(assignmentId);
+        assignmentService.deactivateAssignment(
+                offeringId,
+                assignmentId
+        );
 
-        // Ensure assignment belongs to the offering in the URL
-        if (!response.getSemesterOfferingId().equals(offeringId)) {
-            throw new IllegalArgumentException(
-                    "Assignment does not belong to this semester offering");
-        }
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build();
     }
 }

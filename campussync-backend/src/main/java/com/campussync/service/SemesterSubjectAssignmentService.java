@@ -1,5 +1,6 @@
 package com.campussync.service;
 
+import com.campussync.dto.request.SemesterSubjectAssignmentRequest;
 import com.campussync.dto.response.SemesterSubjectAssignmentResponse;
 import com.campussync.entity.SemesterOffering;
 import com.campussync.entity.SemesterSubjectAssignment;
@@ -29,6 +30,13 @@ public class SemesterSubjectAssignmentService {
     private final SemesterSubjectAssignmentRepository assignmentRepository;
 
     private final SubjectRepository subjectRepository;
+
+    @Transactional
+    public SemesterSubjectAssignmentResponse assignSubject(
+            SemesterSubjectAssignmentRequest request) {
+
+        return assignSubject(request.getSemesterOfferingId(), request.getSubjectId());
+    }
 
     @Transactional
     public SemesterSubjectAssignmentResponse assignSubject(
@@ -118,27 +126,40 @@ public class SemesterSubjectAssignmentService {
 
     // Deactivate a subject assignment
     @Transactional
-    public SemesterSubjectAssignmentResponse deactivateAssignment(
+    public void deactivateAssignment(
+            Long offeringId,
             Long assignmentId) {
 
-        // 1. Find assignment
         SemesterSubjectAssignment assignment =
                 assignmentRepository.findById(assignmentId)
                         .orElseThrow(() ->
-                            new EntityNotFoundException(
-                                "Subject assignment not found"));
+                                new EntityNotFoundException(
+                                        "Subject assignment not found"));
 
-        // 2. Check current status
-        if (!assignment.isActive()) {
+        if (!assignment.getSemesterOffering()
+                .getSemesterOfferingId().equals(offeringId)) {
+
             throw new IllegalArgumentException(
-                "Subject assignment is already inactive");
+                    "Subject assignment does not belong to this offering");
         }
 
-        // 3. Deactivate assignment
-        assignment.setActive(false);
+        if (!assignment.isActive()) {
+            throw new IllegalArgumentException(
+                    "Subject assignment is already inactive");
+        }
 
-        // 4. Convert updated entity into response DTO
-        return mapToResponse(assignment);
+        SemesterStatus status =
+                assignment.getSemesterOffering().getStatus();
+
+        if (status == SemesterStatus.COMPLETED
+                || status == SemesterStatus.CANCELLED) {
+
+            throw new IllegalArgumentException(
+                    "Cannot modify assignments of a completed or cancelled offering");
+        }
+
+        assignment.setActive(false);
+        assignmentRepository.save(assignment);
     }
 
     private SemesterSubjectAssignmentResponse mapToResponse(
