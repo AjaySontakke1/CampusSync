@@ -10,6 +10,7 @@ import com.campussync.entity.TeacherSubjectAssignment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -24,8 +25,24 @@ public interface TeacherSubjectAssignmentRepository
             AcademicYear academicYear
     );
 
+    boolean existsBySubjectAndCourseAndSemesterAndAcademicYearAndDivision(
+            Subject subject,
+            Course course,
+            Semester semester,
+            AcademicYear academicYear,
+            String division
+    );
+
     Optional<TeacherSubjectAssignment> findByAssignmentIdAndTeacher(
             Long assignmentId,
             Teacher teacher
+    );
+
+    List<TeacherSubjectAssignment> findByTeacher(Teacher teacher);
+
+    List<TeacherSubjectAssignment> findByCourseAndSemesterAndAcademicYear(
+            Course course,
+            Semester semester,
+            AcademicYear academicYear
     );
 }
