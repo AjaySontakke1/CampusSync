@@ -148,9 +148,14 @@ public class SemesterSubjectAssignmentService {
                 .assignmentId(assignment.getAssignmentId())
                 .semesterOfferingId(
                     assignment.getSemesterOffering().getSemesterOfferingId())
+                .semesterName(
+                    assignment.getSemesterOffering().getSemester().getSemesterName())
+                .academicYearName(
+                    assignment.getSemesterOffering().getAcademicYear().getName())
                 .subjectId(assignment.getSubject().getSubjectId())
                 .subjectName(assignment.getSubject().getSubjectName())
                 .subjectCode(assignment.getSubject().getSubjectCode())
+                .credits(assignment.getSubject().getCredits())
                 .active(assignment.isActive())
                 .build();
     }

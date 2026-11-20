@@ -13,11 +13,17 @@ public class SemesterSubjectAssignmentResponse {
 
     private Long semesterOfferingId;
 
+    private String semesterName;
+
+    private String academicYearName;
+
     private Long subjectId;
 
     private String subjectName;
 
     private String subjectCode;
+
+    private int credits;
 
     private boolean active;
 }
