@@ -41,6 +41,16 @@ public class AdminTeacherSubjectAssignmentController {
         return ResponseEntity.ok(assignments);
     }
 
+    // GET ACTIVE ASSIGNMENTS
+    @GetMapping("/active")
+    public ResponseEntity<List<TeacherSubjectAssignmentResponse>> getActiveAssignments() {
+
+        List<TeacherSubjectAssignmentResponse> assignments =
+                assignmentService.getActiveAssignments();
+
+        return ResponseEntity.ok(assignments);
+    }
+
     // GET ASSIGNMENT BY ID
     @GetMapping("/{id}")
     public ResponseEntity<TeacherSubjectAssignmentResponse> getAssignmentById(

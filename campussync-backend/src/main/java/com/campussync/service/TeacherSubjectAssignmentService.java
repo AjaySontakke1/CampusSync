@@ -136,6 +136,16 @@ public class TeacherSubjectAssignmentService {
                 .toList();
     }
 
+    // GET ACTIVE ASSIGNMENTS
+    @Transactional(readOnly = true)
+    public List<TeacherSubjectAssignmentResponse> getActiveAssignments() {
+
+        return assignmentRepository.findByActiveTrue()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     // GET ASSIGNMENT BY ID
     @Transactional(readOnly = true)
     public TeacherSubjectAssignmentResponse getAssignmentById(Long id) {
