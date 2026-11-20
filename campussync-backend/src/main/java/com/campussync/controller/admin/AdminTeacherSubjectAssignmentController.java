@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,10 +24,14 @@ public class AdminTeacherSubjectAssignmentController {
     // CREATE ASSIGNMENT
     @PostMapping
     public ResponseEntity<TeacherSubjectAssignmentResponse> createAssignment(
-            @Valid @RequestBody TeacherSubjectAssignmentRequest request) {
+            @Valid @RequestBody TeacherSubjectAssignmentRequest request,
+            Authentication authentication) {
 
         TeacherSubjectAssignmentResponse response =
-                assignmentService.createAssignment(request);
+                assignmentService.createAssignment(
+                        request,
+                        authentication.getName()
+                );
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -77,10 +82,14 @@ public class AdminTeacherSubjectAssignmentController {
     @PutMapping("/{id}")
     public ResponseEntity<TeacherSubjectAssignmentResponse> updateAssignment(
             @PathVariable Long id,
-            @Valid @RequestBody TeacherSubjectAssignmentRequest request) {
+            @Valid @RequestBody TeacherSubjectAssignmentRequest request,
+            @RequestParam String reason,
+            Authentication authentication) {
 
         TeacherSubjectAssignmentResponse response =
-                assignmentService.updateAssignment(id, request);
+                assignmentService.updateAssignment(
+                        id, request, authentication.getName(), reason
+                );
 
         return ResponseEntity.ok(response);
     }
@@ -88,9 +97,13 @@ public class AdminTeacherSubjectAssignmentController {
     // DEACTIVATE ASSIGNMENT
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<String> deactivateAssignment(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @RequestParam String reason,
+            Authentication authentication) {
 
-        assignmentService.deactivateAssignment(id);
+        assignmentService.deactivateAssignment(
+                id, authentication.getName(), reason
+        );
 
         return ResponseEntity.ok("Assignment deactivated successfully");
     }

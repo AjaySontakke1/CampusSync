@@ -3,6 +3,7 @@ package com.campussync.service;
 import com.campussync.dto.request.TeacherSubjectAssignmentRequest;
 import com.campussync.dto.response.TeacherSubjectAssignmentResponse;
 import com.campussync.entity.*;
+import com.campussync.enums.AssignmentHistoryAction;
 import com.campussync.repository.*;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -24,10 +25,12 @@ public class TeacherSubjectAssignmentService {
     private final SemesterRepository semesterRepository;
     private final AcademicYearRepository academicYearRepository;
     private final TeacherSubjectAssignmentRepository assignmentRepository;
+    private final TeacherSubjectAssignmentHistoryService historyService;
 
     // CREATE ASSIGNMENT
     public TeacherSubjectAssignmentResponse createAssignment(
-            TeacherSubjectAssignmentRequest request) {
+            TeacherSubjectAssignmentRequest request,
+            String adminEmail) {
 
         // 1. Find Teacher
         Teacher teacher = teacherRepository.findById(request.getTeacherId())
@@ -122,7 +125,17 @@ public class TeacherSubjectAssignmentService {
         TeacherSubjectAssignment saved =
                 assignmentRepository.save(assignment);
 
-        // 13. Return response DTO
+        // 13. Record history
+        historyService.recordHistory(
+                saved.getAssignmentId(),
+                adminEmail,
+                AssignmentHistoryAction.CREATED,
+                "Teacher assigned to " + subject.getSubjectName()
+                        + " for Division " + division,
+                "New teacher subject assignment"
+        );
+
+        // 14. Return response DTO
         return mapToResponse(saved);
     }
 
@@ -177,7 +190,14 @@ public class TeacherSubjectAssignmentService {
     // UPDATE ASSIGNMENT
     public TeacherSubjectAssignmentResponse updateAssignment(
             Long assignmentId,
-            TeacherSubjectAssignmentRequest request) {
+            TeacherSubjectAssignmentRequest request,
+            String adminEmail,
+            String reason) {
+
+        // Validate reason
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason is required for updating assignment");
+        }
 
         // Find existing assignment
         TeacherSubjectAssignment assignment =
@@ -190,6 +210,15 @@ public class TeacherSubjectAssignmentService {
             throw new IllegalArgumentException(
                     "Cannot update an inactive assignment");
         }
+
+        // Capture previous details for history
+        String oldTeacherName =
+                assignment.getTeacher().getUser().getFirstName()
+                + " " +
+                assignment.getTeacher().getUser().getLastName();
+
+        String oldSubjectName =
+                assignment.getSubject().getSubjectName();
 
         // Find teacher
         Teacher teacher = teacherRepository.findById(request.getTeacherId())
@@ -283,11 +312,36 @@ public class TeacherSubjectAssignmentService {
         TeacherSubjectAssignment updated =
                 assignmentRepository.save(assignment);
 
+        // Record history
+        historyService.recordHistory(
+                updated.getAssignmentId(),
+                adminEmail,
+                AssignmentHistoryAction.UPDATED,
+                "Assignment updated. Previous teacher: "
+                        + oldTeacherName
+                        + ", Previous subject: "
+                        + oldSubjectName
+                        + ". New teacher: "
+                        + teacher.getUser().getFirstName()
+                        + " " + teacher.getUser().getLastName()
+                        + ", New subject: "
+                        + subject.getSubjectName(),
+                reason
+        );
+
         return mapToResponse(updated);
     }
 
     // DEACTIVATE ASSIGNMENT
-    public void deactivateAssignment(Long assignmentId) {
+    public void deactivateAssignment(
+            Long assignmentId,
+            String adminEmail,
+            String reason) {
+
+        // Validate reason
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Reason is required for deactivating assignment");
+        }
 
         TeacherSubjectAssignment assignment =
                 assignmentRepository.findById(assignmentId)
@@ -303,6 +357,14 @@ public class TeacherSubjectAssignmentService {
         assignment.setActive(false);
 
         assignmentRepository.save(assignment);
+
+        historyService.recordHistory(
+                assignment.getAssignmentId(),
+                adminEmail,
+                AssignmentHistoryAction.DEACTIVATED,
+                "Teacher subject assignment deactivated",
+                reason
+        );
     }
 
     // MAP ENTITY TO RESPONSE DTO
