@@ -26,14 +26,20 @@ public class SemesterSubjectAssignment {
     private Long assignmentId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "semester_offering_id", nullable = false)
+    @JoinColumn(
+        name = "semester_offering_id",
+        nullable = false
+    )
     private SemesterOffering semesterOffering;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subject_id", nullable = false)
+    @JoinColumn(
+        name = "subject_id",
+        nullable = false
+    )
     private Subject subject;
 
-    @Column(nullable = false)
+    @Column(name = "active", nullable = false)
     @Builder.Default
     private boolean active = true;
 }
