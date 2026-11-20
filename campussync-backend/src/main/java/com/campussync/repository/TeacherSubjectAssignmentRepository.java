@@ -33,12 +33,24 @@ public interface TeacherSubjectAssignmentRepository
             String division
     );
 
+    boolean existsBySubjectAndCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
+            Subject subject,
+            Course course,
+            Semester semester,
+            AcademicYear academicYear,
+            String division
+    );
+
     Optional<TeacherSubjectAssignment> findByAssignmentIdAndTeacher(
             Long assignmentId,
             Teacher teacher
     );
 
     List<TeacherSubjectAssignment> findByTeacher(Teacher teacher);
+
+    List<TeacherSubjectAssignment> findByActiveTrue();
+
+    List<TeacherSubjectAssignment> findByTeacherAndActiveTrue(Teacher teacher);
 
     List<TeacherSubjectAssignment> findByCourseAndSemesterAndAcademicYear(
             Course course,

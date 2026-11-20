@@ -28,4 +28,6 @@ public class TeacherSubjectAssignmentResponse {
     private String academicYearName;
 
     private String division;
+
+    private boolean active;
 }

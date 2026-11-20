@@ -40,4 +40,7 @@ public class TeacherSubjectAssignment {
     @Column(name = "division")
     private String division;
 
+    @Column(name = "active", nullable = false)
+    @Builder.Default
+    private boolean active = true;
 }

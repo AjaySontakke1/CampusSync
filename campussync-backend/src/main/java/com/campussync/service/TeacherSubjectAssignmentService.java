@@ -95,15 +95,15 @@ public class TeacherSubjectAssignmentService {
         // 9. Normalize division
         String division = request.getDivision().trim().toUpperCase();
 
-        // 10. Check duplicate assignment
+        // 10. Check duplicate active assignment
         boolean alreadyAssigned =
                 assignmentRepository
-                        .existsBySubjectAndCourseAndSemesterAndAcademicYearAndDivision(
+                        .existsBySubjectAndCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
                                 subject, course, semester, academicYear, division);
 
         if (alreadyAssigned) {
             throw new IllegalArgumentException(
-                    "A teacher is already assigned to this subject and division");
+                    "An active teacher is already assigned to this subject and division");
         }
 
         // 11. Create assignment
@@ -115,6 +115,7 @@ public class TeacherSubjectAssignmentService {
                         .semester(semester)
                         .academicYear(academicYear)
                         .division(division)
+                        .active(true)
                         .build();
 
         // 12. Save assignment
@@ -194,6 +195,7 @@ public class TeacherSubjectAssignmentService {
                 .academicYearName(academicYear.getName())
 
                 .division(assignment.getDivision())
+                .active(assignment.isActive())
                 .build();
     }
 }
