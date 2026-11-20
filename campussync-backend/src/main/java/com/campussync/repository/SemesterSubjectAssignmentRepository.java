@@ -20,23 +20,22 @@ public interface SemesterSubjectAssignmentRepository
             Subject subject
     );
 
-    // Find all assignments for an offering
-    List<SemesterSubjectAssignment>
-    findBySemesterOffering(SemesterOffering semesterOffering);
-
-    // Find active assignments for an offering
-    List<SemesterSubjectAssignment>
-    findBySemesterOfferingAndActiveTrue(
+    // Find all subject assignments for an offering
+    List<SemesterSubjectAssignment> findBySemesterOffering(
             SemesterOffering semesterOffering
     );
 
-    // Find assignments for a particular subject
-    List<SemesterSubjectAssignment> findBySubject(Subject subject);
+    // Find only active subject assignments
+    List<SemesterSubjectAssignment> findBySemesterOfferingAndActiveTrue(
+            SemesterOffering semesterOffering
+    );
 
     // Find a particular assignment
-    Optional<SemesterSubjectAssignment>
-    findBySemesterOfferingAndSubject(
+    Optional<SemesterSubjectAssignment> findBySemesterOfferingAndSubject(
             SemesterOffering semesterOffering,
             Subject subject
     );
+
+    // Find all assignments for a subject
+    List<SemesterSubjectAssignment> findBySubject(Subject subject);
 }
