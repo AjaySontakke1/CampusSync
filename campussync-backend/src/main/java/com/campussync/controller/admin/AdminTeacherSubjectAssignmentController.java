@@ -62,4 +62,26 @@ public class AdminTeacherSubjectAssignmentController {
 
         return ResponseEntity.ok(assignments);
     }
+
+    // UPDATE ASSIGNMENT
+    @PutMapping("/{id}")
+    public ResponseEntity<TeacherSubjectAssignmentResponse> updateAssignment(
+            @PathVariable Long id,
+            @Valid @RequestBody TeacherSubjectAssignmentRequest request) {
+
+        TeacherSubjectAssignmentResponse response =
+                assignmentService.updateAssignment(id, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    // DEACTIVATE ASSIGNMENT
+    @PatchMapping("/{id}/deactivate")
+    public ResponseEntity<String> deactivateAssignment(
+            @PathVariable Long id) {
+
+        assignmentService.deactivateAssignment(id);
+
+        return ResponseEntity.ok("Assignment deactivated successfully");
+    }
 }
