@@ -10,4 +10,10 @@ import java.util.Optional;
 @Repository
 public interface ParentRepository extends JpaRepository<Parent, Long> {
     Optional<Parent> findByUser(User user);
+
+    // Find parent using associated User email
+    Optional<Parent> findByUserEmail(String email);
+
+    // Check whether a parent account already exists for this email
+    boolean existsByUserEmail(String email);
 }
