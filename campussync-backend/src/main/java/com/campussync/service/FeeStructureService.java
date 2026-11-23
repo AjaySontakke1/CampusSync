@@ -235,6 +235,29 @@ public class FeeStructureService {
         return mapToResponse(updated);
     }
 
+    @Transactional
+    public void deactivateFeeStructure(Long feeStructureId) {
+
+        // 1. Find fee structure
+        FeeStructure feeStructure =
+                feeStructureRepository.findById(feeStructureId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Fee structure not found"));
+
+        // 2. Check current status
+        if (!feeStructure.isActive()) {
+            throw new IllegalArgumentException(
+                    "Fee structure is already inactive");
+        }
+
+        // 3. Deactivate
+        feeStructure.setActive(false);
+
+        // 4. Save
+        feeStructureRepository.save(feeStructure);
+    }
+
     private FeeStructureResponseDTO mapToResponse(
             FeeStructure feeStructure) {
 
