@@ -53,6 +53,16 @@ public interface CourseEnrollmentRepository
             String division
     );
 
+    // Check for duplicate active enrollment excluding current enrollment ID
+    boolean existsByStudentAndCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrueAndEnrollmentIdNot(
+            Student student,
+            Course course,
+            Semester semester,
+            AcademicYear academicYear,
+            String division,
+            Long enrollmentId
+    );
+
     // Get all active enrollments
     List<CourseEnrollment> findByActiveTrue();
 

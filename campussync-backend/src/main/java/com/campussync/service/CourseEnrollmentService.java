@@ -123,6 +123,108 @@ public class CourseEnrollmentService {
         return mapToResponse(saved);
     }
 
+    @Transactional
+    public CourseEnrollmentResponse updateEnrollment(
+            Long enrollmentId,
+            CourseEnrollmentRequest request) {
+
+        // 1. Find existing enrollment
+        CourseEnrollment enrollment =
+                enrollmentRepository.findById(enrollmentId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Enrollment not found"));
+
+        if (!enrollment.isActive()) {
+            throw new IllegalArgumentException(
+                    "Inactive enrollment cannot be updated");
+        }
+
+        // 2. Find requested Student
+        Student student = studentRepository.findById(request.getStudentId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Student not found"));
+
+        // 3. Find Course
+        Course course = courseRepository.findById(request.getCourseId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Course not found"));
+
+        // 4. Find Semester
+        Semester semester = semesterRepository.findById(request.getSemesterId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Semester not found"));
+
+        // 5. Find Academic Year
+        AcademicYear academicYear =
+                academicYearRepository.findById(request.getAcademicYearId())
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Academic year not found"));
+
+        // 6. Validate active status
+        if (!Boolean.TRUE.equals(student.getUser().getActive())
+                || !course.isActive()
+                || !semester.isActive()
+                || !academicYear.isActive()) {
+
+            throw new IllegalArgumentException(
+                    "All selected records must be active");
+        }
+
+        // 7. Validate Course-Semester relationship
+        if (!semester.getCourse().getCourseId()
+                .equals(course.getCourseId())) {
+
+            throw new IllegalArgumentException(
+                    "Semester does not belong to selected course");
+        }
+
+        // 8. Validate Student's current academic details
+        if (!student.getCourse().getCourseId().equals(course.getCourseId())
+                || !student.getSemester().getSemesterId()
+                        .equals(semester.getSemesterId())) {
+
+            throw new IllegalArgumentException(
+                    "Enrollment does not match student's academic details");
+        }
+
+        if (!request.getDivision().trim()
+                .equalsIgnoreCase(student.getDivision())) {
+
+            throw new IllegalArgumentException(
+                    "Division does not match student's current division");
+        }
+
+        // 9. Check duplicate enrollment excluding current record
+        boolean duplicate = enrollmentRepository
+                .existsByStudentAndCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrueAndEnrollmentIdNot(
+                        student,
+                        course,
+                        semester,
+                        academicYear,
+                        request.getDivision().trim(),
+                        enrollmentId
+                );
+
+        if (duplicate) {
+            throw new IllegalArgumentException(
+                    "Duplicate active enrollment exists");
+        }
+
+        // 10. Update existing record
+        enrollment.setStudent(student);
+        enrollment.setCourse(course);
+        enrollment.setSemester(semester);
+        enrollment.setAcademicYear(academicYear);
+        enrollment.setDivision(request.getDivision().trim());
+
+        CourseEnrollment updated =
+                enrollmentRepository.save(enrollment);
+
+        return mapToResponse(updated);
+    }
+
     @Transactional(readOnly = true)
     public List<CourseEnrollmentResponse> getAllEnrollments() {
 
