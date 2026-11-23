@@ -623,6 +623,39 @@ public class ParentService {
         return mapToResponse(parent);
     }
 
+    // UPDATE PARENT
+    public ParentResponse updateParent(
+            Long parentId,
+            ParentRequest request) {
+
+        // 1. Find existing parent
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Parent not found with ID: " + parentId));
+
+        // 2. Verify that the request belongs to the same User
+        if (!parent.getUser().getId().equals(request.getUserId())) {
+            throw new IllegalArgumentException(
+                    "Cannot change the associated user account");
+        }
+
+        // 3. Update parent information
+        parent.setFirstName(request.getFirstName().trim());
+        parent.setLastName(request.getLastName().trim());
+        parent.setFatherName(request.getFatherName());
+        parent.setMotherName(request.getMotherName());
+        parent.setPhone(request.getPhone());
+        parent.setAddress(request.getAddress());
+        parent.setOccupation(request.getOccupation());
+
+        // 4. Save updated parent
+        Parent updatedParent = parentRepository.save(parent);
+
+        // 5. Return updated response
+        return mapToResponse(updatedParent);
+    }
+
     // ENTITY TO RESPONSE DTO
     private ParentResponse mapToResponse(Parent parent) {
 
