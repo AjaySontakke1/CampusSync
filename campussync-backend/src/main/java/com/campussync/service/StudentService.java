@@ -9,6 +9,8 @@ import com.campussync.dto.FeeResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
+import com.campussync.dto.response.PaymentHistoryResponseDTO;
+import com.campussync.dto.response.StudentFeeDetailsResponseDTO;
 import com.campussync.entity.Announcement;
 import com.campussync.entity.Assignment;
 import com.campussync.entity.AssignmentSubmission;
@@ -18,10 +20,12 @@ import com.campussync.entity.ExamResult;
 import com.campussync.entity.Fee;
 import com.campussync.entity.LectureNote;
 import com.campussync.entity.LeaveRequest;
+import com.campussync.entity.Payment;
 import com.campussync.entity.Student;
 import com.campussync.entity.Timetable;
 import com.campussync.entity.User;
 import com.campussync.enums.AttendanceStatus;
+import com.campussync.exception.ResourceNotFoundException;
 import com.campussync.repository.AnnouncementRepository;
 import com.campussync.repository.AssignmentRepository;
 import com.campussync.repository.AssignmentSubmissionRepository;
@@ -31,15 +35,18 @@ import com.campussync.repository.ExamResultRepository;
 import com.campussync.repository.FeeRepository;
 import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.LeaveRequestRepository;
+import com.campussync.repository.PaymentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class StudentService {
 
     private final UserRepository userRepository;
@@ -54,33 +61,7 @@ public class StudentService {
     private final TimetableRepository timetableRepository;
     private final LeaveRequestRepository leaveRequestRepository;
     private final AnnouncementRepository announcementRepository;
-
-    public StudentService(
-            UserRepository userRepository,
-            StudentRepository studentRepository,
-            CourseEnrollmentRepository courseEnrollmentRepository,
-            AssignmentRepository assignmentRepository,
-            AssignmentSubmissionRepository assignmentSubmissionRepository,
-            AttendanceRepository attendanceRepository,
-            ExamResultRepository examResultRepository,
-            FeeRepository feeRepository,
-            LectureNoteRepository lectureNoteRepository,
-            TimetableRepository timetableRepository,
-            LeaveRequestRepository leaveRequestRepository,
-            AnnouncementRepository announcementRepository) {
-        this.userRepository = userRepository;
-        this.studentRepository = studentRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.assignmentRepository = assignmentRepository;
-        this.assignmentSubmissionRepository = assignmentSubmissionRepository;
-        this.attendanceRepository = attendanceRepository;
-        this.examResultRepository = examResultRepository;
-        this.feeRepository = feeRepository;
-        this.lectureNoteRepository = lectureNoteRepository;
-        this.timetableRepository = timetableRepository;
-        this.leaveRequestRepository = leaveRequestRepository;
-        this.announcementRepository = announcementRepository;
-    }
+    private final PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public List<AssignmentProgressDTO> getMyAssignments(String email) {
@@ -358,6 +339,56 @@ public class StudentService {
                         .createdAt(announcement.getCreatedAt())
                         .expiresAt(announcement.getExpiresAt())
                         .build())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentFeeDetailsResponseDTO> getMyFeeDetails(
+            String email) {
+
+        // 1. Find logged-in student's profile
+        Student student = studentRepository.findByUser_Email(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Student not found"));
+
+        // 2. Get all fee records of this student
+        List<Fee> fees = feeRepository.findByStudent(student);
+
+        // 3. Convert each fee into response DTO
+        return fees.stream()
+                .map(fee -> {
+
+                    // 4. Get payment history for this fee
+                    List<PaymentHistoryResponseDTO> history =
+                            paymentRepository
+                                    .findByFeeOrderByPaymentDateDesc(fee)
+                                    .stream()
+                                    .map(payment ->
+                                            PaymentHistoryResponseDTO.builder()
+                                                    .paymentId(payment.getPaymentId())
+                                                    .amount(payment.getAmount())
+                                                    .transactionId(payment.getTransactionId())
+                                                    .paymentMethod(payment.getPaymentMethod())
+                                                    .paymentDate(payment.getPaymentDate())
+                                                    .status(payment.getStatus())
+                                                    .build()
+                                    )
+                                    .toList();
+
+                    // 5. Return fee details with payment history
+                    return StudentFeeDetailsResponseDTO.builder()
+                            .feeId(fee.getFeeId())
+                            .courseName(fee.getCourse().getCourseName())
+                            .semesterName(fee.getSemester().getSemesterName())
+                            .academicYear(fee.getAcademicYear().getName())
+                            .totalAmount(fee.getTotalAmount())
+                            .paidAmount(fee.getPaidAmount())
+                            .remainingAmount(fee.getRemainingAmount())
+                            .dueDate(fee.getDueDate())
+                            .status(fee.getStatus())
+                            .paymentHistory(history)
+                            .build();
+                })
                 .toList();
     }
 }
