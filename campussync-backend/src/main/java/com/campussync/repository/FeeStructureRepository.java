@@ -43,4 +43,9 @@ public interface FeeStructureRepository
             Semester semester,
             AcademicYear academicYear
     );
+
+    // Find active fee structure by ID
+    Optional<FeeStructure> findByFeeStructureIdAndActiveTrue(
+            Long feeStructureId
+    );
 }

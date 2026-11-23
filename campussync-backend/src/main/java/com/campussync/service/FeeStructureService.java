@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -112,6 +113,30 @@ public class FeeStructureService {
 
         // 10. Return response
         return mapToResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FeeStructureResponseDTO> getAllFeeStructures() {
+
+        return feeStructureRepository.findByActiveTrue()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public FeeStructureResponseDTO getFeeStructureById(
+            Long feeStructureId) {
+
+        FeeStructure feeStructure =
+                feeStructureRepository
+                        .findByFeeStructureIdAndActiveTrue(feeStructureId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Active fee structure not found: "
+                                                + feeStructureId));
+
+        return mapToResponse(feeStructure);
     }
 
     private FeeStructureResponseDTO mapToResponse(
