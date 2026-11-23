@@ -5,6 +5,7 @@ import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.response.ParentChildFeeDetailsResponseDTO;
 import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.StudentResponseDTO;
@@ -70,6 +71,18 @@ public class ParentController {
         String email = authentication.getName();
         List<FeeResponseDTO> fees = parentService.getChildFees(email, studentId);
         return ResponseEntity.ok(fees);
+    }
+
+    @GetMapping("/children/fees")
+    public ResponseEntity<List<ParentChildFeeDetailsResponseDTO>>
+            getMyChildrenFeeDetails(Authentication authentication) {
+
+        List<ParentChildFeeDetailsResponseDTO> response =
+                parentService.getMyChildrenFeeDetails(
+                        authentication.getName()
+                );
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/students/{studentId}/assignments")

@@ -35,13 +35,18 @@ import com.campussync.repository.FeeRepository;
 import com.campussync.repository.LeaveRequestRepository;
 import com.campussync.repository.LectureNoteRepository;
 import com.campussync.repository.ParentRepository;
+import com.campussync.repository.PaymentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
 import com.campussync.dto.ParentStudentLinkResponse;
 import com.campussync.dto.request.ParentRequest;
+import com.campussync.dto.response.ParentChildFeeDetailsResponseDTO;
 import com.campussync.dto.response.ParentResponse;
+import com.campussync.dto.response.PaymentHistoryResponseDTO;
+import com.campussync.dto.response.StudentFeeDetailsResponseDTO;
 import com.campussync.enums.Role;
+import com.campussync.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -67,6 +72,7 @@ public class ParentService {
     private final TimetableRepository timetableRepository;
     private final AnnouncementRepository announcementRepository;
     private final LeaveRequestRepository leaveRequestRepository;
+    private final PaymentRepository paymentRepository;
 
     @Transactional(readOnly = true)
     public List<StudentResponseDTO> getMyStudents(String email) {
@@ -811,5 +817,78 @@ public class ParentService {
                 .occupation(parent.getOccupation())
                 .totalStudents(totalStudents)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ParentChildFeeDetailsResponseDTO> getMyChildrenFeeDetails(
+            String email) {
+
+        // 1. Find parent using logged-in user's email
+        Parent parent = parentRepository.findByUserEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Parent not found"));
+
+        // 2. Get only children linked to this parent
+        List<Student> children = parent.getStudents();
+
+        if (children == null) {
+            return List.of();
+        }
+
+        // 3. Prepare response for each child
+        return children.stream()
+                .map(student -> {
+
+                    // 4. Find this child's fee records
+                    List<StudentFeeDetailsResponseDTO> feeDetails =
+                            feeRepository.findByStudent(student)
+                                    .stream()
+                                    .map(fee -> {
+
+                                        // 5. Get payment history
+                                        List<PaymentHistoryResponseDTO> history =
+                                                paymentRepository
+                                                        .findByFeeOrderByPaymentDateDesc(fee)
+                                                        .stream()
+                                                        .map(payment ->
+                                                                PaymentHistoryResponseDTO.builder()
+                                                                        .paymentId(payment.getPaymentId())
+                                                                        .amount(payment.getAmount())
+                                                                        .transactionId(payment.getTransactionId())
+                                                                        .paymentMethod(payment.getPaymentMethod())
+                                                                        .paymentDate(payment.getPaymentDate())
+                                                                        .status(payment.getStatus())
+                                                                        .build()
+                                                        )
+                                                        .toList();
+
+                                        // 6. Build fee details
+                                        return StudentFeeDetailsResponseDTO.builder()
+                                                .feeId(fee.getFeeId())
+                                                .courseName(fee.getCourse().getCourseName())
+                                                .semesterName(fee.getSemester().getSemesterName())
+                                                .academicYear(fee.getAcademicYear().getName())
+                                                .totalAmount(fee.getTotalAmount())
+                                                .paidAmount(fee.getPaidAmount())
+                                                .remainingAmount(fee.getRemainingAmount())
+                                                .dueDate(fee.getDueDate())
+                                                .status(fee.getStatus())
+                                                .paymentHistory(history)
+                                                .build();
+                                    })
+                                    .toList();
+
+                    // 7. Return child with fee details
+                    return ParentChildFeeDetailsResponseDTO.builder()
+                            .studentId(student.getStudentId())
+                            .studentName(
+                                    student.getUser().getFirstName() + " " +
+                                    student.getUser().getLastName()
+                            )
+                            .registrationNumber(student.getRegistrationNumber())
+                            .feeDetails(feeDetails)
+                            .build();
+                })
+                .toList();
     }
 }
