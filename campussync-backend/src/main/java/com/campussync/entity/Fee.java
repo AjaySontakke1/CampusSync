@@ -37,6 +37,10 @@ public class Fee {
     @JoinColumn(name = "academic_year_id", nullable = false)
     private AcademicYear academicYear;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fee_structure_id")
+    private FeeStructure feeStructure;
+
     @Column(name = "total_amount", nullable = false, precision = 10, scale = 2)
     private BigDecimal totalAmount;
 
