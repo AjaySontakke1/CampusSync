@@ -38,6 +38,7 @@ import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
+import com.campussync.dto.ParentStudentLinkResponse;
 import com.campussync.dto.request.ParentRequest;
 import com.campussync.dto.response.ParentResponse;
 import com.campussync.enums.Role;
@@ -654,6 +655,61 @@ public class ParentService {
 
         // 5. Return updated response
         return mapToResponse(updatedParent);
+    }
+
+    // LINK STUDENT TO PARENT
+    @Transactional
+    public ParentStudentLinkResponse linkStudentToParent(
+            Long parentId, Long studentId) {
+
+        // 1. Find Parent
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Parent not found with ID: " + parentId));
+
+        // 2. Check Parent account is active
+        if (!Boolean.TRUE.equals(parent.getUser().getActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot link an inactive parent");
+        }
+
+        // 3. Find Student
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Student not found with ID: " + studentId));
+
+        // 4. Prevent duplicate linking
+        if (student.getParent() != null) {
+
+            if (student.getParent().getParentId().equals(parentId)) {
+                throw new IllegalArgumentException(
+                        "Student is already linked to this parent");
+            }
+
+            throw new IllegalArgumentException(
+                    "Student already has another parent. Use the change-parent operation.");
+        }
+
+        // 5. Set relationship on owning side
+        student.setParent(parent);
+
+        // 6. Save Student
+        Student savedStudent = studentRepository.save(student);
+
+        // 7. Return DTO
+        return ParentStudentLinkResponse.builder()
+                .studentId(savedStudent.getStudentId())
+                .studentName(
+                        savedStudent.getUser().getFirstName() + " " +
+                        savedStudent.getUser().getLastName())
+                .rollNumber(savedStudent.getRollNumber())
+                .parentId(parent.getParentId())
+                .parentName(parent.getFirstName() + " " +
+                            parent.getLastName())
+                .parentEmail(parent.getUser().getEmail())
+                .build();
     }
 
     // ENTITY TO RESPONSE DTO
