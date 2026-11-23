@@ -5,6 +5,7 @@ import com.campussync.dto.FeeStructureResponseDTO;
 import com.campussync.entity.*;
 import com.campussync.repository.*;
 
+import com.campussync.enums.FeeStatus;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -23,6 +25,8 @@ public class FeeStructureService {
     private final CourseRepository courseRepository;
     private final SemesterRepository semesterRepository;
     private final AcademicYearRepository academicYearRepository;
+    private final FeeRepository feeRepository;
+    private final CourseEnrollmentRepository enrollmentRepository;
 
     @Transactional
     public FeeStructureResponseDTO createFeeStructure(
@@ -256,6 +260,78 @@ public class FeeStructureService {
 
         // 4. Save
         feeStructureRepository.save(feeStructure);
+    }
+
+    @Transactional
+    public int assignFeeStructureToStudents(Long feeStructureId) {
+
+        // 1. Find Fee Structure
+        FeeStructure feeStructure =
+                feeStructureRepository.findById(feeStructureId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Fee structure not found"));
+
+        // 2. Check active status
+        if (!feeStructure.isActive()) {
+            throw new IllegalArgumentException(
+                    "Fee structure is inactive");
+        }
+
+        // 3. Semester-specific assignment only
+        if (feeStructure.getSemester() == null) {
+            throw new IllegalArgumentException(
+                    "Course-wide fee assignment is not supported yet");
+        }
+
+        // 4. Find eligible active enrollments
+        List<CourseEnrollment> enrollments =
+                enrollmentRepository
+                        .findByCourseAndSemesterAndAcademicYearAndActiveTrue(
+                                feeStructure.getCourse(),
+                                feeStructure.getSemester(),
+                                feeStructure.getAcademicYear()
+                        );
+
+        int generatedCount = 0;
+
+        // 5. Generate individual Fee records
+        for (CourseEnrollment enrollment : enrollments) {
+
+            Student student = enrollment.getStudent();
+
+            // 6. Prevent duplicate fee generation
+            boolean alreadyGenerated =
+                    feeRepository.existsByStudentAndFeeStructure(
+                            student, feeStructure);
+
+            if (alreadyGenerated) {
+                continue;
+            }
+
+            // 7. Initialize financial amounts
+            BigDecimal amount = feeStructure.getAmount();
+
+            Fee fee = Fee.builder()
+                    .student(student)
+                    .course(feeStructure.getCourse())
+                    .semester(feeStructure.getSemester())
+                    .academicYear(feeStructure.getAcademicYear())
+                    .feeStructure(feeStructure)
+                    .totalAmount(amount)
+                    .paidAmount(BigDecimal.ZERO)
+                    .remainingAmount(amount)
+                    .dueDate(feeStructure.getDueDate())
+                    .status(FeeStatus.PENDING)
+                    .build();
+
+            // 8. Save individual fee
+            feeRepository.save(fee);
+
+            generatedCount++;
+        }
+
+        return generatedCount;
     }
 
     private FeeStructureResponseDTO mapToResponse(

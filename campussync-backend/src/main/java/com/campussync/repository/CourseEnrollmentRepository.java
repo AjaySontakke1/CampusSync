@@ -26,6 +26,13 @@ public interface CourseEnrollmentRepository
             String division
     );
 
+    // Find active enrollments for a course, semester, and academic year across all divisions
+    List<CourseEnrollment> findByCourseAndSemesterAndAcademicYearAndActiveTrue(
+            Course course,
+            Semester semester,
+            AcademicYear academicYear
+    );
+
     // Check whether a course has active student enrollments
     boolean existsByCourseAndActiveTrue(Course course);
 
