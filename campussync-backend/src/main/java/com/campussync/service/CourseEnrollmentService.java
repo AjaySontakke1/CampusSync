@@ -225,6 +225,29 @@ public class CourseEnrollmentService {
         return mapToResponse(updated);
     }
 
+    @Transactional
+    public void deactivateEnrollment(Long enrollmentId) {
+
+        // 1. Find enrollment
+        CourseEnrollment enrollment =
+                enrollmentRepository.findById(enrollmentId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Enrollment not found: " + enrollmentId));
+
+        // 2. Check current status
+        if (!enrollment.isActive()) {
+            throw new IllegalArgumentException(
+                    "Enrollment is already inactive");
+        }
+
+        // 3. Deactivate enrollment
+        enrollment.setActive(false);
+
+        // 4. Save changes
+        enrollmentRepository.save(enrollment);
+    }
+
     @Transactional(readOnly = true)
     public List<CourseEnrollmentResponse> getAllEnrollments() {
 
