@@ -38,12 +38,19 @@ import com.campussync.repository.ParentRepository;
 import com.campussync.repository.StudentRepository;
 import com.campussync.repository.TimetableRepository;
 import com.campussync.repository.UserRepository;
+import com.campussync.dto.request.ParentRequest;
+import com.campussync.dto.response.ParentResponse;
+import com.campussync.enums.Role;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class ParentService {
 
     private final UserRepository userRepository;
@@ -59,35 +66,6 @@ public class ParentService {
     private final TimetableRepository timetableRepository;
     private final AnnouncementRepository announcementRepository;
     private final LeaveRequestRepository leaveRequestRepository;
-
-    public ParentService(
-            UserRepository userRepository,
-            ParentRepository parentRepository,
-            StudentRepository studentRepository,
-            AttendanceRepository attendanceRepository,
-            ExamResultRepository examResultRepository,
-            FeeRepository feeRepository,
-            CourseEnrollmentRepository courseEnrollmentRepository,
-            AssignmentRepository assignmentRepository,
-            AssignmentSubmissionRepository assignmentSubmissionRepository,
-            LectureNoteRepository lectureNoteRepository,
-            TimetableRepository timetableRepository,
-            AnnouncementRepository announcementRepository,
-            LeaveRequestRepository leaveRequestRepository) {
-        this.userRepository = userRepository;
-        this.parentRepository = parentRepository;
-        this.studentRepository = studentRepository;
-        this.attendanceRepository = attendanceRepository;
-        this.examResultRepository = examResultRepository;
-        this.feeRepository = feeRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.assignmentRepository = assignmentRepository;
-        this.assignmentSubmissionRepository = assignmentSubmissionRepository;
-        this.lectureNoteRepository = lectureNoteRepository;
-        this.timetableRepository = timetableRepository;
-        this.announcementRepository = announcementRepository;
-        this.leaveRequestRepository = leaveRequestRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<StudentResponseDTO> getMyStudents(String email) {
@@ -576,5 +554,98 @@ public class ParentService {
                         .remarks(lr.getRemarks())
                         .build())
                 .toList();
+    }
+
+    // CREATE PARENT
+    public ParentResponse createParent(ParentRequest request) {
+
+        // 1. Find existing User account
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("User not found"));
+
+        // 2. Check User role
+        if (user.getRole() != Role.PARENT) {
+            throw new IllegalArgumentException(
+                    "Selected user does not have PARENT role");
+        }
+
+        // 3. Check User account status
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot create profile for an inactive user");
+        }
+
+        // 4. Check whether Parent profile already exists
+        if (parentRepository.existsByUserEmail(user.getEmail())) {
+            throw new IllegalArgumentException(
+                    "Parent profile already exists for this user");
+        }
+
+        // 5. Create Parent entity
+        Parent parent = Parent.builder()
+                .user(user)
+                .firstName(request.getFirstName().trim())
+                .lastName(request.getLastName().trim())
+                .fatherName(request.getFatherName())
+                .motherName(request.getMotherName())
+                .phone(request.getPhone())
+                .address(request.getAddress())
+                .occupation(request.getOccupation())
+                .build();
+
+        // 6. Save Parent
+        Parent savedParent = parentRepository.save(parent);
+
+        // 7. Return Response DTO
+        return mapToResponse(savedParent);
+    }
+
+    // GET ALL PARENTS
+    @Transactional(readOnly = true)
+    public List<ParentResponse> getAllParents() {
+
+        return parentRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    // GET PARENT BY ID
+    @Transactional(readOnly = true)
+    public ParentResponse getParentById(Long parentId) {
+
+        Parent parent = parentRepository.findById(parentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Parent not found with ID: " + parentId));
+
+        return mapToResponse(parent);
+    }
+
+    // ENTITY TO RESPONSE DTO
+    private ParentResponse mapToResponse(Parent parent) {
+
+        User user = parent.getUser();
+
+        int totalStudents = parent.getStudents() == null
+                ? 0
+                : parent.getStudents().size();
+
+        return ParentResponse.builder()
+                .parentId(parent.getParentId())
+                .userId(user.getId())
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .active(user.getActive())
+                .firstName(parent.getFirstName())
+                .lastName(parent.getLastName())
+                .fatherName(parent.getFatherName())
+                .motherName(parent.getMotherName())
+                .phone(parent.getPhone())
+                .address(parent.getAddress())
+                .occupation(parent.getOccupation())
+                .totalStudents(totalStudents)
+                .build();
     }
 }
