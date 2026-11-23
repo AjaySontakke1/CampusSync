@@ -48,4 +48,19 @@ public interface FeeStructureRepository
     Optional<FeeStructure> findByFeeStructureIdAndActiveTrue(
             Long feeStructureId
     );
+
+    // Check duplicate course-wide fee structure excluding current ID
+    boolean existsByCourseAndSemesterIsNullAndAcademicYearAndActiveTrueAndFeeStructureIdNot(
+            Course course,
+            AcademicYear academicYear,
+            Long feeStructureId
+    );
+
+    // Check duplicate semester-specific fee structure excluding current ID
+    boolean existsByCourseAndSemesterAndAcademicYearAndActiveTrueAndFeeStructureIdNot(
+            Course course,
+            Semester semester,
+            AcademicYear academicYear,
+            Long feeStructureId
+    );
 }

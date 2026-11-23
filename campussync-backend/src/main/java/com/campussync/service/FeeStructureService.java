@@ -139,6 +139,102 @@ public class FeeStructureService {
         return mapToResponse(feeStructure);
     }
 
+    @Transactional
+    public FeeStructureResponseDTO updateFeeStructure(
+            Long feeStructureId,
+            FeeStructureRequestDTO request) {
+
+        // 1. Find existing fee structure
+        FeeStructure feeStructure =
+                feeStructureRepository.findById(feeStructureId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Fee structure not found"));
+
+        // 2. Prevent updating inactive structure
+        if (!feeStructure.isActive()) {
+            throw new IllegalArgumentException(
+                    "Inactive fee structure cannot be updated");
+        }
+
+        // 3. Find Course
+        Course course = courseRepository.findById(request.getCourseId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Course not found"));
+
+        if (!course.isActive()) {
+            throw new IllegalArgumentException("Course is inactive");
+        }
+
+        // 4. Find Academic Year
+        AcademicYear academicYear =
+                academicYearRepository.findById(request.getAcademicYearId())
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Academic year not found"));
+
+        // 5. Find Semester if provided
+        Semester semester = null;
+
+        if (request.getSemesterId() != null) {
+
+            semester = semesterRepository.findById(request.getSemesterId())
+                    .orElseThrow(() ->
+                            new EntityNotFoundException("Semester not found"));
+
+            if (!semester.isActive()) {
+                throw new IllegalArgumentException("Semester is inactive");
+            }
+
+            if (!semester.getCourse().getCourseId()
+                    .equals(course.getCourseId())) {
+
+                throw new IllegalArgumentException(
+                        "Semester does not belong to selected course");
+            }
+        }
+
+        // 6. Validate due date
+        if (request.getDueDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException(
+                    "Due date cannot be in the past");
+        }
+
+        // 7. Check duplicate structure, excluding current record
+        boolean duplicate;
+
+        if (semester == null) {
+
+            duplicate = feeStructureRepository
+                    .existsByCourseAndSemesterIsNullAndAcademicYearAndActiveTrueAndFeeStructureIdNot(
+                            course, academicYear, feeStructureId);
+
+        } else {
+
+            duplicate = feeStructureRepository
+                    .existsByCourseAndSemesterAndAcademicYearAndActiveTrueAndFeeStructureIdNot(
+                            course, semester, academicYear, feeStructureId);
+        }
+
+        if (duplicate) {
+            throw new IllegalArgumentException(
+                    "Another active fee structure already exists");
+        }
+
+        // 8. Update existing structure
+        feeStructure.setCourse(course);
+        feeStructure.setSemester(semester);
+        feeStructure.setAcademicYear(academicYear);
+        feeStructure.setAmount(request.getAmount());
+        feeStructure.setDueDate(request.getDueDate());
+
+        // 9. Save
+        FeeStructure updated =
+                feeStructureRepository.save(feeStructure);
+
+        return mapToResponse(updated);
+    }
+
     private FeeStructureResponseDTO mapToResponse(
             FeeStructure feeStructure) {
 
