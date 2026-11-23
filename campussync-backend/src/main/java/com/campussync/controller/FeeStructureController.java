@@ -1,5 +1,6 @@
 package com.campussync.controller;
 
+import com.campussync.dto.FeeAssignmentResponseDTO;
 import com.campussync.dto.FeeStructureRequestDTO;
 import com.campussync.dto.FeeStructureResponseDTO;
 import com.campussync.service.FeeStructureService;
@@ -66,5 +67,27 @@ public class FeeStructureController {
         feeStructureService.deactivateFeeStructure(feeStructureId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    // 6. Assign Fee Structure to Enrolled Students
+    @PostMapping("/{feeStructureId}/assign")
+    public ResponseEntity<FeeAssignmentResponseDTO> assignFeeStructure(
+            @PathVariable Long feeStructureId) {
+
+        int generatedCount =
+                feeStructureService.assignFeeStructureToStudents(
+                        feeStructureId);
+
+        FeeAssignmentResponseDTO response =
+                FeeAssignmentResponseDTO.builder()
+                        .feeStructureId(feeStructureId)
+                        .generatedCount(generatedCount)
+                        .message(
+                                generatedCount > 0
+                                        ? "Fee assigned successfully"
+                                        : "No new fee records generated")
+                        .build();
+
+        return ResponseEntity.ok(response);
     }
 }
