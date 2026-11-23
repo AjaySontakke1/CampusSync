@@ -712,6 +712,58 @@ public class ParentService {
                 .build();
     }
 
+    // CHANGE STUDENT'S PARENT
+    @Transactional
+    public ParentStudentLinkResponse changeStudentParent(
+            Long studentId, Long newParentId) {
+
+        // 1. Find Student
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Student not found with ID: " + studentId));
+
+        // 2. Find new Parent
+        Parent newParent = parentRepository.findById(newParentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Parent not found with ID: " + newParentId));
+
+        // 3. Check new Parent account is active
+        if (!Boolean.TRUE.equals(newParent.getUser().getActive())) {
+            throw new IllegalArgumentException(
+                    "Cannot assign an inactive parent");
+        }
+
+        // 4. Check if already linked to this Parent
+        if (student.getParent() != null &&
+                student.getParent().getParentId().equals(newParentId)) {
+
+            throw new IllegalArgumentException(
+                    "Student is already linked to this parent");
+        }
+
+        // 5. Change relationship
+        student.setParent(newParent);
+
+        // 6. Save Student
+        Student savedStudent = studentRepository.save(student);
+
+        // 7. Return response
+        return ParentStudentLinkResponse.builder()
+                .studentId(savedStudent.getStudentId())
+                .studentName(
+                        savedStudent.getUser().getFirstName() + " " +
+                        savedStudent.getUser().getLastName())
+                .rollNumber(savedStudent.getRollNumber())
+                .parentId(newParent.getParentId())
+                .parentName(
+                        newParent.getFirstName() + " " +
+                        newParent.getLastName())
+                .parentEmail(newParent.getUser().getEmail())
+                .build();
+    }
+
     // ENTITY TO RESPONSE DTO
     private ParentResponse mapToResponse(Parent parent) {
 
