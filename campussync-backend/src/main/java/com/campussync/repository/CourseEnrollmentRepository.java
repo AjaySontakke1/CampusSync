@@ -55,4 +55,7 @@ public interface CourseEnrollmentRepository
 
     // Get all active enrollments
     List<CourseEnrollment> findByActiveTrue();
+
+    // Find active enrollment by ID
+    Optional<CourseEnrollment> findByEnrollmentIdAndActiveTrue(Long enrollmentId);
 }

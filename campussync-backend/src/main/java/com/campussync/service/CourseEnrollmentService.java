@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -120,6 +121,69 @@ public class CourseEnrollmentService {
 
         // 11. Convert entity to response DTO
         return mapToResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourseEnrollmentResponse> getAllEnrollments() {
+
+        return enrollmentRepository.findByActiveTrue()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public CourseEnrollmentResponse getEnrollmentById(Long enrollmentId) {
+
+        CourseEnrollment enrollment =
+                enrollmentRepository.findByEnrollmentIdAndActiveTrue(enrollmentId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Active enrollment not found: " + enrollmentId));
+
+        return mapToResponse(enrollment);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourseEnrollmentResponse> getStudentEnrollments(
+            Long studentId) {
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Student not found"));
+
+        return enrollmentRepository.findByStudentAndActiveTrue(student)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourseEnrollmentResponse> getClassEnrollments(
+            Long courseId,
+            Long semesterId,
+            Long academicYearId,
+            String division) {
+
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Course not found"));
+
+        Semester semester = semesterRepository.findById(semesterId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Semester not found"));
+
+        AcademicYear academicYear =
+                academicYearRepository.findById(academicYearId)
+                        .orElseThrow(() ->
+                                new EntityNotFoundException("Academic year not found"));
+
+        return enrollmentRepository
+                .findByCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
+                        course, semester, academicYear, division.trim())
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     private CourseEnrollmentResponse mapToResponse(
