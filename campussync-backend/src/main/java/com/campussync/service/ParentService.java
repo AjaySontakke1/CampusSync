@@ -764,6 +764,29 @@ public class ParentService {
                 .build();
     }
 
+    // UNLINK STUDENT FROM PARENT
+    @Transactional
+    public void unlinkStudentFromParent(Long studentId) {
+
+        // 1. Find Student
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Student not found with ID: " + studentId));
+
+        // 2. Check whether Parent is linked
+        if (student.getParent() == null) {
+            throw new IllegalArgumentException(
+                    "Student does not have a linked parent");
+        }
+
+        // 3. Remove relationship
+        student.setParent(null);
+
+        // 4. Save Student
+        studentRepository.save(student);
+    }
+
     // ENTITY TO RESPONSE DTO
     private ParentResponse mapToResponse(Parent parent) {
 
