@@ -1,0 +1,154 @@
+package com.campussync.service;
+
+import com.campussync.dto.request.CourseEnrollmentRequest;
+import com.campussync.dto.response.CourseEnrollmentResponse;
+import com.campussync.entity.AcademicYear;
+import com.campussync.entity.Course;
+import com.campussync.entity.CourseEnrollment;
+import com.campussync.entity.Semester;
+import com.campussync.entity.Student;
+import com.campussync.repository.AcademicYearRepository;
+import com.campussync.repository.CourseEnrollmentRepository;
+import com.campussync.repository.CourseRepository;
+import com.campussync.repository.SemesterRepository;
+import com.campussync.repository.StudentRepository;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+
+@Service
+@RequiredArgsConstructor
+public class CourseEnrollmentService {
+
+    private final CourseEnrollmentRepository enrollmentRepository;
+    private final StudentRepository studentRepository;
+    private final CourseRepository courseRepository;
+    private final SemesterRepository semesterRepository;
+    private final AcademicYearRepository academicYearRepository;
+
+    @Transactional
+    public CourseEnrollmentResponse createEnrollment(
+            CourseEnrollmentRequest request) {
+
+        // 1. Find Student
+        Student student = studentRepository.findById(request.getStudentId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Student not found"));
+
+        // 2. Find Course
+        Course course = courseRepository.findById(request.getCourseId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Course not found"));
+
+        // 3. Find Semester
+        Semester semester = semesterRepository.findById(request.getSemesterId())
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Semester not found"));
+
+        // 4. Find Academic Year
+        AcademicYear academicYear =
+                academicYearRepository.findById(request.getAcademicYearId())
+                        .orElseThrow(() ->
+                                new EntityNotFoundException(
+                                        "Academic year not found"));
+
+        // 5. Check active status
+        if (!Boolean.TRUE.equals(student.getUser().getActive())
+                || !course.isActive()
+                || !semester.isActive()
+                || !academicYear.isActive()) {
+
+            throw new IllegalArgumentException(
+                    "Student, course, semester and academic year must be active");
+        }
+
+        // 6. Check Semester belongs to selected Course
+        if (!semester.getCourse().getCourseId()
+                .equals(course.getCourseId())) {
+
+            throw new IllegalArgumentException(
+                    "Selected semester does not belong to this course");
+        }
+
+        // 7. Check Student's current academic details
+        if (!student.getCourse().getCourseId().equals(course.getCourseId())
+                || !student.getSemester().getSemesterId()
+                        .equals(semester.getSemesterId())) {
+
+            throw new IllegalArgumentException(
+                    "Enrollment details do not match student's current course and semester");
+        }
+
+        if (!request.getDivision().trim().equalsIgnoreCase(
+            student.getDivision())) {
+
+            throw new IllegalArgumentException(
+                    "Division does not match student's current division");
+        }
+
+        // 8. Check duplicate active enrollment
+        boolean exists = enrollmentRepository
+                .existsByStudentAndCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
+                        student,
+                        course,
+                        semester,
+                        academicYear,
+                        request.getDivision().trim()
+                );
+
+        if (exists) {
+            throw new IllegalArgumentException(
+                    "Student already has an active enrollment for these details");
+        }
+
+        // 9. Create enrollment
+        CourseEnrollment enrollment = CourseEnrollment.builder()
+                .student(student)
+                .course(course)
+                .semester(semester)
+                .academicYear(academicYear)
+                .division(request.getDivision().trim())
+                .enrollmentDate(LocalDate.now())
+                .active(true)
+                .build();
+
+        // 10. Save enrollment
+        CourseEnrollment saved = enrollmentRepository.save(enrollment);
+
+        // 11. Convert entity to response DTO
+        return mapToResponse(saved);
+    }
+
+    private CourseEnrollmentResponse mapToResponse(
+            CourseEnrollment enrollment) {
+
+        Student student = enrollment.getStudent();
+
+        return CourseEnrollmentResponse.builder()
+                .enrollmentId(enrollment.getEnrollmentId())
+
+                .studentId(student.getStudentId())
+                .studentName(
+                        student.getUser().getFirstName() + " " +
+                        student.getUser().getLastName())
+                .rollNumber(student.getRollNumber())
+
+                .courseId(enrollment.getCourse().getCourseId())
+                .courseName(enrollment.getCourse().getCourseName())
+
+                .semesterId(enrollment.getSemester().getSemesterId())
+                .semesterName(enrollment.getSemester().getSemesterName())
+
+                .academicYearId(
+                        enrollment.getAcademicYear().getAcademicYearId())
+                .academicYearName(enrollment.getAcademicYear().getName())
+
+                .division(enrollment.getDivision())
+                .enrollmentDate(enrollment.getEnrollmentDate())
+                .active(enrollment.isActive())
+                .build();
+    }
+}
