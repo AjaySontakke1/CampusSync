@@ -43,4 +43,16 @@ public interface CourseEnrollmentRepository
     boolean existsBySemesterOfferingAndActiveTrue(
             SemesterOffering semesterOffering
     );
+
+    // Check for an identical active enrollment
+    boolean existsByStudentAndCourseAndSemesterAndAcademicYearAndDivisionAndActiveTrue(
+            Student student,
+            Course course,
+            Semester semester,
+            AcademicYear academicYear,
+            String division
+    );
+
+    // Get all active enrollments
+    List<CourseEnrollment> findByActiveTrue();
 }
