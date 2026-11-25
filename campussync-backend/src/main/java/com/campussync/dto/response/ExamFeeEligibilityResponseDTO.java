@@ -13,11 +13,15 @@ public class ExamFeeEligibilityResponseDTO {
 
     private Long studentId;
 
-    private boolean eligible;
+    private String courseName;
+    private String semesterName;
+    private String academicYear;
 
-    private BigDecimal totalFee;
-    private BigDecimal paidAmount;
-    private BigDecimal remainingAmount;
+    private BigDecimal currentSemesterOutstanding;
+    private BigDecimal previousArrears;
+    private BigDecimal totalOutstanding;
+
+    private boolean eligible;
 
     private String message;
 }

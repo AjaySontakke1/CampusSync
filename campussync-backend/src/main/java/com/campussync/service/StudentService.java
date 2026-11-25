@@ -64,6 +64,7 @@ public class StudentService {
     private final LeaveRequestRepository leaveRequestRepository;
     private final AnnouncementRepository announcementRepository;
     private final PaymentRepository paymentRepository;
+    private final ExamEligibilityService examEligibilityService;
 
     @Transactional(readOnly = true)
     public List<AssignmentProgressDTO> getMyAssignments(String email) {
@@ -397,46 +398,11 @@ public class StudentService {
     @Transactional(readOnly = true)
     public ExamFeeEligibilityResponseDTO checkExamFeeEligibility(
             Long studentId) {
-
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found"));
-
-        List<Fee> fees = feeRepository.findByStudent(student);
-
-        BigDecimal totalFee = BigDecimal.ZERO;
-        BigDecimal paidAmount = BigDecimal.ZERO;
-        BigDecimal remainingAmount = BigDecimal.ZERO;
-
-        for (Fee fee : fees) {
-            totalFee = totalFee.add(fee.getTotalAmount());
-            paidAmount = paidAmount.add(fee.getPaidAmount());
-            remainingAmount = remainingAmount.add(
-                    fee.getRemainingAmount()
-            );
-        }
-
-        boolean eligible =
-                !fees.isEmpty() &&
-                remainingAmount.compareTo(BigDecimal.ZERO) == 0;
-
-        return ExamFeeEligibilityResponseDTO.builder()
-                .studentId(studentId)
-                .eligible(eligible)
-                .totalFee(totalFee)
-                .paidAmount(paidAmount)
-                .remainingAmount(remainingAmount)
-                .message(eligible
-                        ? "You are eligible to fill the examination form"
-                        : "Clear all outstanding fee dues before filling the examination form")
-                .build();
+        return examEligibilityService.checkEligibility(studentId);
     }
 
     @Transactional(readOnly = true)
     public ExamFeeEligibilityResponseDTO checkMyExamFeeEligibility(String email) {
-        Student student = studentRepository.findByUser_Email(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found"));
-        return checkExamFeeEligibility(student.getStudentId());
+        return examEligibilityService.checkEligibility(email);
     }
 }
