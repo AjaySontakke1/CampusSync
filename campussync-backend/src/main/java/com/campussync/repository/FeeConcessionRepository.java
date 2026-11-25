@@ -16,4 +16,8 @@ public interface FeeConcessionRepository
             Fee fee,
             FeeConcessionStatus status
     );
+
+    List<FeeConcession> findByStatusOrderByRequestedAtAsc(
+            FeeConcessionStatus status
+    );
 }

@@ -46,6 +46,9 @@ public class FeeConcession {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Column(name = "admin_remarks", length = 500)
+    private String adminRemarks;
+
     @PrePersist
     protected void onCreate() {
         if (this.requestedAt == null) {
