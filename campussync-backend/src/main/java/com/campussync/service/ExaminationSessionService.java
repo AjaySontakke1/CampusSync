@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -85,6 +86,107 @@ public class ExaminationSessionService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Transactional
+    public ExaminationSessionResponseDTO openSession(Long sessionId) {
+
+        ExaminationSession session =
+                sessionRepository.findById(sessionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Examination session not found"));
+
+        if (session.getStatus() != ExamSessionStatus.DRAFT) {
+            throw new IllegalStateException(
+                    "Only DRAFT sessions can be opened");
+        }
+
+        if (LocalDate.now().isAfter(session.getFormEndDate())) {
+            throw new IllegalStateException(
+                    "Examination form deadline has already passed");
+        }
+
+        session.setStatus(ExamSessionStatus.OPEN);
+
+        sessionRepository.save(session);
+
+        return mapToResponse(session);
+    }
+
+    @Transactional
+    public ExaminationSessionResponseDTO closeSession(Long sessionId) {
+
+        ExaminationSession session =
+                sessionRepository.findById(sessionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Examination session not found"));
+
+        if (session.getStatus() != ExamSessionStatus.OPEN) {
+            throw new IllegalStateException(
+                    "Only OPEN sessions can be closed");
+        }
+
+        session.setStatus(ExamSessionStatus.CLOSED);
+
+        sessionRepository.save(session);
+
+        return mapToResponse(session);
+    }
+
+    @Transactional
+    public ExaminationSessionResponseDTO completeSession(Long sessionId) {
+
+        ExaminationSession session =
+                sessionRepository.findById(sessionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Examination session not found"));
+
+        if (session.getStatus() != ExamSessionStatus.CLOSED) {
+            throw new IllegalStateException(
+                    "Only CLOSED sessions can be completed");
+        }
+
+        session.setStatus(ExamSessionStatus.COMPLETED);
+
+        sessionRepository.save(session);
+
+        return mapToResponse(session);
+    }
+
+    @Transactional
+    public ExaminationSession validateSessionForSubmission(
+            Long sessionId) {
+
+        ExaminationSession session =
+                sessionRepository.findById(sessionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Examination session not found"));
+
+        LocalDate today = LocalDate.now();
+
+        if (session.getStatus() != ExamSessionStatus.OPEN) {
+            throw new IllegalStateException(
+                    "Examination form is not currently open");
+        }
+
+        if (today.isBefore(session.getFormStartDate())) {
+            throw new IllegalStateException(
+                    "Examination form submission has not started");
+        }
+
+        if (today.isAfter(session.getFormEndDate())) {
+
+            session.setStatus(ExamSessionStatus.CLOSED);
+
+            throw new IllegalStateException(
+                    "Examination form submission deadline has passed");
+        }
+
+        return session;
     }
 
     private ExaminationSessionResponseDTO mapToResponse(

@@ -32,4 +32,28 @@ public class AdminExaminationController {
         return ResponseEntity.ok(
                 sessionService.getAllSessions());
     }
+
+    @PutMapping("/sessions/{id}/open")
+    public ResponseEntity<ExaminationSessionResponseDTO> openSession(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                sessionService.openSession(id));
+    }
+
+    @PutMapping("/sessions/{id}/close")
+    public ResponseEntity<ExaminationSessionResponseDTO> closeSession(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                sessionService.closeSession(id));
+    }
+
+    @PutMapping("/sessions/{id}/complete")
+    public ResponseEntity<ExaminationSessionResponseDTO> completeSession(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                sessionService.completeSession(id));
+    }
 }
