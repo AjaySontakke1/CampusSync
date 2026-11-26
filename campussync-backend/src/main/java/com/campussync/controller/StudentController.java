@@ -5,13 +5,18 @@ import com.campussync.dto.AssignmentProgressDTO;
 import com.campussync.dto.AttendanceResponseDTO;
 import com.campussync.dto.ExamResultResponseDTO;
 import com.campussync.dto.FeeResponseDTO;
+import com.campussync.dto.request.ExaminationFormRequestDTO;
 import com.campussync.dto.request.FeeConcessionRequestDTO;
+import com.campussync.dto.response.ExaminationFormResponseDTO;
+import com.campussync.dto.response.ExaminationSessionResponseDTO;
 import com.campussync.dto.response.FeeConcessionResponseDTO;
 import com.campussync.dto.response.ExamFeeEligibilityResponseDTO;
 import com.campussync.dto.response.StudentFeeDetailsResponseDTO;
 import com.campussync.dto.LectureNoteResponseDTO;
 import com.campussync.dto.LeaveRequestResponseDTO;
 import com.campussync.dto.TimetableResponseDTO;
+import com.campussync.service.ExaminationFormService;
+import com.campussync.service.ExaminationSessionService;
 import com.campussync.service.FeeConcessionService;
 import com.campussync.service.StudentService;
 import jakarta.validation.Valid;
@@ -32,10 +37,18 @@ public class StudentController {
 
     private final StudentService studentService;
     private final FeeConcessionService feeConcessionService;
+    private final ExaminationFormService examinationFormService;
+    private final ExaminationSessionService examinationSessionService;
 
-    public StudentController(StudentService studentService, FeeConcessionService feeConcessionService) {
+    public StudentController(
+            StudentService studentService,
+            FeeConcessionService feeConcessionService,
+            ExaminationFormService examinationFormService,
+            ExaminationSessionService examinationSessionService) {
         this.studentService = studentService;
         this.feeConcessionService = feeConcessionService;
+        this.examinationFormService = examinationFormService;
+        this.examinationSessionService = examinationSessionService;
     }
 
     @GetMapping("/assignments")
@@ -97,6 +110,37 @@ public class StudentController {
                 studentService.checkMyExamFeeEligibility(email);
 
         return ResponseEntity.ok(eligibility);
+    }
+
+    @GetMapping("/examination-sessions/available")
+    public ResponseEntity<List<ExaminationSessionResponseDTO>> getAvailableExaminationSessions() {
+        return ResponseEntity.ok(examinationSessionService.getAvailableSessions());
+    }
+
+    @PostMapping("/examination-forms")
+    public ResponseEntity<ExaminationFormResponseDTO> submitForm(
+            @Valid @RequestBody ExaminationFormRequestDTO request,
+            Authentication authentication) {
+
+        ExaminationFormResponseDTO response =
+                examinationFormService.submitForm(
+                        authentication.getName(),
+                        request
+                );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(response);
+    }
+
+    @GetMapping("/examination-forms")
+    public ResponseEntity<List<ExaminationFormResponseDTO>> getMyForms(
+            Authentication authentication) {
+
+        return ResponseEntity.ok(
+                examinationFormService.getMyForms(
+                        authentication.getName()
+                )
+        );
     }
 
     @GetMapping("/lecture-notes")

@@ -88,6 +88,16 @@ public class ExaminationSessionService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<ExaminationSessionResponseDTO> getAvailableSessions() {
+
+        return sessionRepository.findByStatusOrderByFormStartDateAsc(ExamSessionStatus.OPEN)
+                .stream()
+                .filter(session -> !LocalDate.now().isAfter(session.getFormEndDate()))
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     @Transactional
     public ExaminationSessionResponseDTO openSession(Long sessionId) {
 
